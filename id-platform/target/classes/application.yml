@@ -1,0 +1,48 @@
+server:
+  port: 3000
+
+spring:
+  application:
+    name: id-platform
+
+  datasource:
+    url: jdbc:h2:file:./id_platform_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+
+  jackson:
+    default-property-inclusion: non_null
+
+id-platform:
+  issuer: http://localhost:3000
+  jwt:
+    access-token-expiry: 900000        # 15 minutes
+    refresh-token-expiry: 604800000    # 7 days
+    algorithm: RS256
+
+  migration:
+    main-site:
+      name: Main Site
+      url: http://localhost:3001
+    ma-site:
+      name: MA Site
+      url: http://localhost:3002
+
+logging:
+  level:
+    com.raksul.idplatform: DEBUG
