@@ -22,14 +22,16 @@ class TestHealthEndpoint:
 class TestRegistration:
     def test_register_new_user(self, client):
         resp = client.post("/api/auth/register", json={
-            "username": "john",
             "email": "john@example.com",
             "password": "pass123",
-            "display_name": "John",
+            "first_name": "John",
+            "last_name": "Doe",
         })
         assert resp.status_code == 201
         data = resp.get_json()
         assert data["email"] == "john@example.com"
+        assert data["first_name"] == "John"
+        assert data["last_name"] == "Doe"
         assert data["source"] == "main_site"
         assert "id" in data
 
@@ -42,16 +44,7 @@ class TestRegistration:
 
     def test_register_duplicate_email_returns_409(self, client, seed_user):
         resp = client.post("/api/auth/register", json={
-            "username": "john2",
             "email": "test@example.com",
-            "password": "pass123",
-        })
-        assert resp.status_code == 409
-
-    def test_register_duplicate_username_returns_409(self, client, seed_user):
-        resp = client.post("/api/auth/register", json={
-            "username": "testuser",
-            "email": "other@example.com",
             "password": "pass123",
         })
         assert resp.status_code == 409
@@ -68,6 +61,7 @@ class TestLogin:
         assert data["session_active"] is True
         assert data["source"] == "main_site"
         assert data["email"] == "test@example.com"
+        assert data["first_name"] == "Test"
 
     def test_login_wrong_password_returns_401(self, client, seed_user):
         resp = client.post("/api/auth/login", json={
@@ -103,7 +97,7 @@ class TestDoLogin:
             "password": "wrongpass",
         })
         assert resp.status_code == 200
-        assert b"Legacy Authentication" in resp.data
+        assert b"Pre-Migration" in resp.data
 
 
 class TestProfile:
@@ -120,7 +114,48 @@ class TestProfile:
         assert resp.status_code == 200
         data = resp.get_json()
         assert data["email"] == "test@example.com"
+        assert data["first_name"] == "Test"
+        assert data["last_name"] == "User"
         assert data["source"] == "main_site"
+
+
+class TestProfileUpdate:
+    def test_update_first_name(self, client, seed_user):
+        client.post("/api/auth/login", json={
+            "email": "test@example.com",
+            "password": "testpass123",
+        })
+        resp = client.put("/api/users/me", json={"first_name": "Updated"})
+        assert resp.status_code == 200
+        assert resp.get_json()["first_name"] == "Updated"
+
+    def test_update_last_name(self, client, seed_user):
+        client.post("/api/auth/login", json={
+            "email": "test@example.com",
+            "password": "testpass123",
+        })
+        resp = client.put("/api/users/me", json={"last_name": "Newname"})
+        assert resp.status_code == 200
+        assert resp.get_json()["last_name"] == "Newname"
+
+    def test_update_not_logged_in_returns_401(self, client):
+        resp = client.put("/api/users/me", json={"first_name": "X"})
+        assert resp.status_code == 401
+
+
+class TestDeleteUser:
+    def test_delete_user(self, client, seed_user):
+        client.post("/api/auth/login", json={
+            "email": "test@example.com",
+            "password": "testpass123",
+        })
+        resp = client.delete("/api/users/me")
+        assert resp.status_code == 200
+        assert "deleted" in resp.get_json()["message"].lower()
+
+    def test_delete_not_logged_in_returns_401(self, client):
+        resp = client.delete("/api/users/me")
+        assert resp.status_code == 401
 
 
 class TestUserEndpoints:
@@ -130,6 +165,8 @@ class TestUserEndpoints:
         data = resp.get_json()
         assert len(data) >= 1
         assert data[0]["email"] == "test@example.com"
+        assert data[0]["first_name"] == "Test"
+        assert "password_hash" in data[0]
 
     def test_user_count(self, client, seed_user):
         resp = client.get("/api/users/count")
@@ -143,12 +180,12 @@ class TestPages:
     def test_index_renders_legacy_home(self, client):
         resp = client.get("/")
         assert resp.status_code == 200
-        assert b"Legacy Authentication" in resp.data
+        assert b"Pre-Migration" in resp.data
 
     def test_do_logout_renders_home(self, client):
         resp = client.get("/do-logout")
         assert resp.status_code == 200
-        assert b"Legacy Authentication" in resp.data
+        assert b"Pre-Migration" in resp.data
 
     def test_login_oidc_redirects_when_oidc_disabled(self, client):
         resp = client.get("/login")
@@ -157,7 +194,7 @@ class TestPages:
 
 
 class TestIndexPostLogin:
-    def test_index_shows_legacy_dashboard_after_login(self, client, seed_user):
+    def test_index_shows_dashboard_after_login(self, client, seed_user):
         client.post("/do-login", data={
             "email": "test@example.com",
             "password": "testpass123",

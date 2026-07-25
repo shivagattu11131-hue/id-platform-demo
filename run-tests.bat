@@ -14,7 +14,7 @@ echo -----------------------------------------------
 cd /d "%DIR%legacy-main-site"
 python -m pytest tests/ -v --tb=short --no-header -q
 if %ERRORLEVEL% EQU 0 (
-    echo [PASS] Legacy Main Site - 21 tests passed
+    echo [PASS] Legacy Main Site - 25 tests passed
     set /a PASS+=1
 ) else (
     echo [FAIL] Legacy Main Site tests failed

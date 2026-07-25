@@ -1,5 +1,4 @@
 import os
-import tempfile
 import pytest
 
 os.environ.setdefault("ID_PLATFORM_URL", "http://localhost:3000")
@@ -29,10 +28,9 @@ def client(app):
 def seed_user(client):
     """Register a test user and return the response data."""
     resp = client.post("/api/auth/register", json={
-        "username": "testuser",
         "email": "test@example.com",
         "password": "testpass123",
-        "display_name": "Test User",
-        "company_name": "Test Corp",
+        "first_name": "Test",
+        "last_name": "User",
     })
     return resp.get_json()
