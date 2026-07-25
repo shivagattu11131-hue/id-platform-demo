@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.raksul.idplatform.AuthControllerTests
+-------------------------------------------------------------------------------
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 15.91 s -- in com.raksul.idplatform.AuthControllerTests
