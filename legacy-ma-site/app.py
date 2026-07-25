@@ -81,6 +81,8 @@ def index():
 @app.route('/login')
 def login_oidc():
     """Redirect to ID Platform for OIDC login."""
+    if not is_oidc_enabled():
+        return redirect('/')
     import hashlib as hl
     import base64
     code_verifier = secrets.token_urlsafe(32)
@@ -457,18 +459,31 @@ LOGGED_IN_PAGE = """
 <body>
     <div class="header">
         <h1>MA Site</h1>
+        {% if oidc_enabled %}
         <p>Acquired Company E-commerce | Port 3002 | <span class="badge badge-oidc">OIDC Enabled</span></p>
+        {% else %}
+        <p>Acquired Company E-commerce | Port 3002 | <span class="badge badge-legacy">Pre-Migration</span></p>
+        {% endif %}
     </div>
     <div class="container">
         <div class="card">
-            <h2>Welcome, {{ user.get('display_name', '') if user.get('display_name') else user.get('email', 'User') }}!</h2>
+            <h2>Welcome, {{ user.get('display_name') or user.get('name') or user.get('email', 'User') }}!</h2>
             <div class="user-info">
                 <p><strong>Email:</strong> {{ user.get('email', 'N/A') }}</p>
+                {% if oidc_enabled %}
                 <p><strong>Auth:</strong> ID Platform (OIDC) <span class="badge badge-oidc">SSO</span></p>
+                {% else %}
+                <p><strong>Auth:</strong> Legacy Session Auth <span class="badge badge-legacy">Session</span></p>
+                {% endif %}
             </div>
+            {% if oidc_enabled %}
             <p>You are logged in via the unified ID Platform. You can now access Main Site without re-login.</p>
             <a href="http://localhost:3001/" class="btn btn-primary">Go to Main Site (SSO)</a>
-            <a href="/logout" class="btn btn-danger">Logout</a>
+            {% else %}
+            <p>You are logged in via the legacy session-based authentication.</p>
+            <a href="http://localhost:3001/" class="btn btn-primary">Go to Main Site</a>
+            {% endif %}
+            <a href="/do-logout" class="btn btn-danger">Logout</a>
         </div>
     </div>
 </body>

@@ -62,11 +62,9 @@ def index():
     oidc_enabled = is_oidc_enabled()
 
     if oidc_enabled and 'user_id' in session:
-        conn = get_db()
-        user = conn.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],)).fetchone()
-        conn.close()
-        if user:
-            return render_template_string(LOGGED_IN_PAGE, user=dict(user), oidc_enabled=True)
+        userinfo = session.get('user_info', {})
+        if userinfo:
+            return render_template_string(LOGGED_IN_PAGE, user=userinfo, oidc_enabled=True)
 
     if oidc_enabled:
         return render_template_string(HOME_PAGE_OIDC)
@@ -83,6 +81,8 @@ def index():
 @app.route('/login')
 def login_oidc():
     """Redirect to ID Platform for OIDC login."""
+    if not is_oidc_enabled():
+        return redirect('/')
     import hashlib as hl
     import base64
     code_verifier = secrets.token_urlsafe(32)
@@ -134,6 +134,7 @@ def callback():
             session['user_id'] = info.get('sub')
             session['user_email'] = info.get('email')
             session['user_name'] = info.get('name')
+            session['user_info'] = info
 
     session.pop('pkce_verifier', None)
     session.pop('oauth_state', None)
@@ -402,18 +403,31 @@ LOGGED_IN_PAGE = """
 <body>
     <div class="header">
         <h1>Main Site</h1>
+        {% if oidc_enabled %}
         <p>E-commerce Platform | Port 3001 | <span class="badge badge-oidc">OIDC Enabled</span></p>
+        {% else %}
+        <p>Legacy Rails Monolith | Port 3001 | <span class="badge badge-legacy">Pre-Migration</span></p>
+        {% endif %}
     </div>
     <div class="container">
         <div class="card">
-            <h2>Welcome, {{ user.get('display_name', '') if user.get('display_name') else user.get('email', 'User') }}!</h2>
+            <h2>Welcome, {{ user.get('display_name') or user.get('name') or user.get('email', 'User') }}!</h2>
             <div class="user-info">
                 <p><strong>Email:</strong> {{ user.get('email', 'N/A') }}</p>
+                {% if oidc_enabled %}
                 <p><strong>Auth:</strong> ID Platform (OIDC) <span class="badge badge-oidc">SSO</span></p>
+                {% else %}
+                <p><strong>Auth:</strong> Legacy Session Auth <span class="badge badge-legacy">Session</span></p>
+                {% endif %}
             </div>
+            {% if oidc_enabled %}
             <p>You are logged in via the unified ID Platform. You can now access MA Site without re-login.</p>
             <a href="http://localhost:3002/" class="btn btn-primary">Go to MA Site (SSO)</a>
-            <a href="/logout" class="btn btn-danger">Logout</a>
+            {% else %}
+            <p>You are logged in via the legacy session-based authentication.</p>
+            <a href="http://localhost:3002/" class="btn btn-primary">Go to MA Site</a>
+            {% endif %}
+            <a href="/do-logout" class="btn btn-danger">Logout</a>
         </div>
     </div>
 </body>

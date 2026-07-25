@@ -121,6 +121,7 @@ public class MigrationService {
             }
         }
 
+        status.setPhase(MigrationStatus.Phase.NOT_STARTED);
         status.setTotalUsers(legacyUsers.size());
         status.setMigratedUsers(newUsers + merged);
         status.setConflictCount(conflicts);
