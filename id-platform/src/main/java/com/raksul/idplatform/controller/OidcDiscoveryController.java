@@ -19,7 +19,9 @@ public class OidcDiscoveryController {
         return ResponseEntity.ok(Map.of(
             "service", "Raksul ID Platform",
             "version", "1.0.0",
+            "status", "running",
             "issuer", "http://localhost:3000",
+            "description", "Unified Identity Provider (OIDC) for Raksul's multi-vertical ecosystem",
             "endpoints", Map.of(
                 "discovery", "http://localhost:3000/.well-known/openid-configuration",
                 "jwks", "http://localhost:3000/jwks.json",
@@ -27,6 +29,10 @@ public class OidcDiscoveryController {
                 "token", "http://localhost:3000/oauth2/token",
                 "userinfo", "http://localhost:3000/oauth2/userinfo",
                 "health", "http://localhost:3000/api/health"
+            ),
+            "registered_clients", Map.of(
+                "main-site", "Main Site (Port 3001)",
+                "ma-site", "MA Site (Port 3002)"
             )
         ));
     }

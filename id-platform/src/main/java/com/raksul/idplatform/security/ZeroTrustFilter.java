@@ -97,6 +97,7 @@ public class ZeroTrustFilter extends OncePerRequestFilter {
 
     private boolean isPublicEndpoint(String path) {
         return path.equals("/") ||
+               path.equals("") ||
                path.startsWith("/.well-known") ||
                path.equals("/jwks.json") ||
                path.equals("/api/health") ||
