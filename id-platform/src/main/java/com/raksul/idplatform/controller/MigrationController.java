@@ -56,10 +56,4 @@ public class MigrationController {
         Map<String, Object> result = migrationService.rollback(site);
         return ResponseEntity.ok(result);
     }
-
-    @GetMapping("/status")
-    public ResponseEntity<Map<String, Object>> getStatus() {
-        Map<String, Object> status = migrationService.getMigrationStatus();
-        return ResponseEntity.ok(status);
-    }
 }
