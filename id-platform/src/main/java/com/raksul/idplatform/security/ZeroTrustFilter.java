@@ -96,7 +96,8 @@ public class ZeroTrustFilter extends OncePerRequestFilter {
     }
 
     private boolean isPublicEndpoint(String path) {
-        return path.startsWith("/.well-known") ||
+        return path.equals("/") ||
+               path.startsWith("/.well-known") ||
                path.equals("/jwks.json") ||
                path.equals("/api/health") ||
                path.startsWith("/oauth2/authorize") ||
@@ -113,7 +114,8 @@ public class ZeroTrustFilter extends OncePerRequestFilter {
                path.startsWith("/error") ||
                path.startsWith("/css/") ||
                path.startsWith("/js/") ||
-               path.startsWith("/images/");
+               path.startsWith("/images/") ||
+               path.startsWith("/webjars/");
     }
 
     private void sendError(HttpServletResponse response, int status, String message) throws IOException {

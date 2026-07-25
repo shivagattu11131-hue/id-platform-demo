@@ -5,7 +5,9 @@ import com.raksul.idplatform.model.User;
 import com.raksul.idplatform.service.AuthService;
 import com.raksul.idplatform.service.OidcService;
 import com.raksul.idplatform.service.TokenService;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 @Controller
 @RequestMapping("/oauth2")
@@ -27,6 +31,8 @@ import java.util.Map;
 public class OidcController {
 
     private static final Logger log = LoggerFactory.getLogger(OidcController.class);
+    private static final String IDP_SESSION_COOKIE = "IDP_SESSION";
+    private static final int SESSION_COOKIE_MAX_AGE = 86400; // 24 hours
 
     @Autowired
     private OidcService oidcService;
@@ -46,7 +52,10 @@ public class OidcController {
             @RequestParam(value = "state", required = false) String state,
             @RequestParam(value = "nonce", required = false) String nonce,
             @RequestParam(value = "code_challenge", required = false) String codeChallenge,
-            @RequestParam(value = "code_challenge_method", defaultValue = "S256") String codeChallengeMethod) {
+            @RequestParam(value = "code_challenge_method", defaultValue = "S256") String codeChallengeMethod,
+            @RequestParam(value = "prompt", defaultValue = "login") String prompt,
+            HttpServletRequest request,
+            HttpServletResponse response) {
 
         if (!"code".equals(responseType)) {
             ModelAndView errorView = new ModelAndView("login");
@@ -67,6 +76,39 @@ public class OidcController {
             return errorView;
         }
 
+        // Handle prompt=none for silent authentication (SSO)
+        if ("none".equals(prompt)) {
+            String idpSession = getSessionCookie(request);
+            if (idpSession != null) {
+                // User has active IDP session - auto-generate auth code
+                User user = authService.getUserById(Long.parseLong(idpSession));
+                if (user != null && user.isActive()) {
+                    String authCode = oidcService.generateAuthorizationCode(
+                            user, clientId, redirectUri, scope,
+                            codeChallenge, codeChallengeMethod, nonce, state
+                    );
+
+                    StringBuilder redirectUrl = new StringBuilder(redirectUri);
+                    redirectUrl.append("?code=").append(authCode);
+                    if (state != null) {
+                        redirectUrl.append("&state=").append(encodeValue(state));
+                    }
+
+                    log.info("Silent auth: Authorization code issued for user {} (client: {})", user.getId(), clientId);
+                    return new ModelAndView("redirect:" + redirectUrl.toString());
+                }
+            }
+
+            // No valid session - return login_required error
+            StringBuilder errorUrl = new StringBuilder(redirectUri);
+            errorUrl.append("?error=login_required&error_description=User+must+login");
+            if (state != null) {
+                errorUrl.append("&state=").append(encodeValue(state));
+            }
+            return new ModelAndView("redirect:" + errorUrl.toString());
+        }
+
+        // Normal login flow - show login page
         ModelAndView modelAndView = new ModelAndView("login");
         modelAndView.addObject("clientName", client.name);
         modelAndView.addObject("clientId", clientId);
@@ -94,6 +136,7 @@ public class OidcController {
             @RequestParam(value = "code_challenge_method", defaultValue = "S256") String codeChallengeMethod,
             @RequestParam("email") String email,
             @RequestParam("password") String password,
+            HttpServletResponse response,
             RedirectAttributes redirectAttributes) {
 
         try {
@@ -106,6 +149,9 @@ public class OidcController {
             if (!authService.validateCredentials(email, password)) {
                 return buildErrorRedirect(redirectUri, state, "access_denied", "Invalid credentials", redirectAttributes);
             }
+
+            // Set IDP session cookie for SSO
+            setSessionCookie(response, String.valueOf(user.getId()));
 
             String authCode = oidcService.generateAuthorizationCode(
                     user, clientId, redirectUri, scope,
@@ -193,16 +239,16 @@ public class OidcController {
         String refreshToken = tokenService.generateRefreshToken(user);
         String idToken = tokenService.generateIdToken(user, clientId, authCode.getNonce(), accessToken);
 
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("access_token", accessToken);
-        response.put("refresh_token", refreshToken);
-        response.put("id_token", idToken);
-        response.put("token_type", "Bearer");
-        response.put("expires_in", tokenService.getAccessTokenExpiry() / 1000);
-        response.put("scope", authCode.getScope());
+        Map<String, Object> tokenResponse = new LinkedHashMap<>();
+        tokenResponse.put("access_token", accessToken);
+        tokenResponse.put("refresh_token", refreshToken);
+        tokenResponse.put("id_token", idToken);
+        tokenResponse.put("token_type", "Bearer");
+        tokenResponse.put("expires_in", tokenService.getAccessTokenExpiry() / 1000);
+        tokenResponse.put("scope", authCode.getScope());
 
         log.info("Token issued via authorization_code for user {} (client: {})", user.getId(), clientId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(tokenResponse);
     }
 
     private ResponseEntity<?> handleRefreshTokenGrant(Map<String, String> request) {
@@ -273,6 +319,30 @@ public class OidcController {
         Map<String, String> response = new LinkedHashMap<>();
         response.put("message", "Token revoked successfully");
         return ResponseEntity.ok(response);
+    }
+
+    private String getSessionCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (IDP_SESSION_COOKIE.equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
+    }
+
+    private void setSessionCookie(HttpServletResponse response, String userId) {
+        Cookie cookie = new Cookie(IDP_SESSION_COOKIE, userId);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false); // Set to true in production (HTTPS)
+        cookie.setPath("/");
+        cookie.setMaxAge(SESSION_COOKIE_MAX_AGE);
+        response.addCookie(cookie);
+        // Set SameSite attribute via header (Cookie class doesn't support it directly)
+        response.addHeader("Set-Cookie", String.format("%s=%s; Path=/; Max-Age=%d; HttpOnly; SameSite=Lax",
+                IDP_SESSION_COOKIE, userId, SESSION_COOKIE_MAX_AGE));
     }
 
     private String buildErrorRedirect(String redirectUri, String state, String error, String errorDescription, RedirectAttributes redirectAttributes) {

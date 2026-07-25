@@ -11,6 +11,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 
 @Service
@@ -25,6 +28,10 @@ public class AuthService {
     private TokenService tokenService;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    // Legacy salt values from the original sites
+    private static final String MAIN_SITE_SALT = "raksul_main_site_salt_2024";
+    private static final String MA_SITE_SALT = "acquired_ma_site_salt_2024";
 
     @Transactional
     public AuthResponse register(AuthRequest request) {
@@ -58,8 +65,13 @@ public class AuthService {
             throw new RuntimeException("Account has been deactivated");
         }
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+        if (!validatePassword(request.getPassword(), user.getPasswordHash())) {
             throw new RuntimeException("Invalid email or password");
+        }
+
+        // Upgrade legacy hash to BCrypt on successful login (lazy migration)
+        if (!isBCrypt(user.getPasswordHash())) {
+            upgradePasswordHash(user, request.getPassword());
         }
 
         log.info("User logged in: {} (ID: {})", user.getEmail(), user.getId());
@@ -116,7 +128,56 @@ public class AuthService {
     public boolean validateCredentials(String email, String password) {
         Optional<User> userOpt = userRepository.findByEmail(email);
         if (userOpt.isEmpty()) return false;
-        return passwordEncoder.matches(password, userOpt.get().getPasswordHash());
+        return validatePassword(password, userOpt.get().getPasswordHash());
+    }
+
+    /**
+     * Validate password against hash - supports both BCrypt and legacy SHA-256
+     */
+    private boolean validatePassword(String password, String storedHash) {
+        if (isBCrypt(storedHash)) {
+            return passwordEncoder.matches(password, storedHash);
+        }
+        // Legacy hash - try both salts
+        return password.equals(storedHash) ||
+               hashLegacyPassword(password, MAIN_SITE_SALT).equals(storedHash) ||
+               hashLegacyPassword(password, MA_SITE_SALT).equals(storedHash);
+    }
+
+    /**
+     * Check if the hash is BCrypt format
+     */
+    private boolean isBCrypt(String hash) {
+        return hash != null && (hash.startsWith("$2a$") || hash.startsWith("$2b$"));
+    }
+
+    /**
+     * Hash password using legacy SHA-256 + salt
+     */
+    private String hashLegacyPassword(String password, String salt) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest((salt + password).getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 not available", e);
+        }
+    }
+
+    /**
+     * Upgrade legacy hash to BCrypt (lazy migration on first login)
+     */
+    @Transactional
+    private void upgradePasswordHash(User user, String plainPassword) {
+        user.setPasswordHash(passwordEncoder.encode(plainPassword));
+        userRepository.save(user);
+        log.info("Upgraded password hash to BCrypt for user: {} (ID: {})", user.getEmail(), user.getId());
     }
 
     private AuthResponse createAuthResponse(User user) {

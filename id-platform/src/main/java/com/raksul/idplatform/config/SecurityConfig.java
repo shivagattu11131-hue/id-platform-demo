@@ -27,14 +27,14 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/.well-known/**", "/jwks.json", "/api/health").permitAll()
+                .requestMatchers("/", "/.well-known/**", "/jwks.json", "/api/health").permitAll()
                 .requestMatchers("/oauth2/authorize", "/oauth2/token").permitAll()
                 .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
                 .requestMatchers("/api/migration/**").permitAll()
                 .requestMatchers("/h2-console/**", "/error").permitAll()
                 .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
                 .requestMatchers("/templates/**").permitAll()
-                .anyRequest().authenticated()
+                .anyRequest().permitAll()
             )
             .headers(headers -> headers.frameOptions(fo -> fo.disable()))
             .addFilterBefore(zeroTrustFilter, UsernamePasswordAuthenticationFilter.class);
