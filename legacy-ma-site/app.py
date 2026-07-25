@@ -74,7 +74,7 @@ def index():
             user = conn.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],)).fetchone()
             conn.close()
             if user:
-                return render_template_string(LOGGED_IN_PAGE, user=user, oidc_enabled=False)
+                return render_template_string(LOGGED_IN_PAGE, user=dict(user), oidc_enabled=False)
         return render_template_string(HOME_PAGE)
 
 
@@ -156,7 +156,7 @@ def do_login():
 
     if user and user['password_hash'] == hash_password(password):
         session['user_id'] = user['id']
-        return render_template_string(LOGGED_IN_PAGE, user=user, oidc_enabled=False)
+        return render_template_string(LOGGED_IN_PAGE, user=dict(user), oidc_enabled=False)
 
     return render_template_string(HOME_PAGE, error="Invalid credentials")
 
