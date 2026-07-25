@@ -20,10 +20,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Controller
 @RequestMapping("/oauth2")
@@ -307,6 +304,68 @@ public class OidcController {
         }
 
         return ResponseEntity.ok(userInfo);
+    }
+
+    @PostMapping("/register")
+    @ResponseBody
+    public ResponseEntity<?> registerClient(@RequestBody Map<String, Object> request) {
+        String clientId = (String) request.get("client_id");
+        String clientName = (String) request.get("client_name");
+        String redirectUrisRaw = (String) request.get("redirect_uris");
+        String scopes = (String) request.getOrDefault("scope", "openid profile email");
+
+        if (clientId == null || clientId.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "invalid_request",
+                    "error_description", "client_id is required"));
+        }
+
+        if (redirectUrisRaw == null || redirectUrisRaw.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "invalid_request",
+                    "error_description", "redirect_uris is required"));
+        }
+
+        String clientSecret = UUID.randomUUID().toString();
+        List<String> redirectUris = Arrays.asList(redirectUrisRaw.split("\\s+"));
+
+        OidcService.ClientConfig config = oidcService.registerClient(
+                clientId, clientSecret, redirectUris, scopes, clientName);
+
+        if (config == null) {
+            return ResponseEntity.status(409).body(Map.of(
+                    "error", "invalid_client_metadata",
+                    "error_description", "Client ID already exists"));
+        }
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("client_id", clientId);
+        response.put("client_secret", clientSecret);
+        response.put("client_name", clientName);
+        response.put("redirect_uris", redirectUris);
+        response.put("scope", scopes);
+        response.put("token_endpoint_auth_method", "client_secret_post");
+        response.put("grant_types", List.of("authorization_code", "refresh_token"));
+        response.put("response_types", List.of("code"));
+
+        log.info("Dynamic client registered: {} ({})", clientName, clientId);
+        return ResponseEntity.status(201).body(response);
+    }
+
+    @GetMapping("/clients")
+    @ResponseBody
+    public ResponseEntity<?> listClients() {
+        List<OidcService.ClientConfig> clientList = oidcService.listClients();
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        for (OidcService.ClientConfig c : clientList) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("client_id", c.clientId);
+            item.put("client_name", c.name);
+            item.put("redirect_uris", c.redirectUris);
+            item.put("scope", c.scope);
+            result.add(item);
+        }
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping("/revoke")

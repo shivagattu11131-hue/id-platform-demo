@@ -42,7 +42,7 @@ echo -----------------------------------------------
 cd /d "%DIR%id-platform"
 call mvn test -q 2>nul
 if %ERRORLEVEL% EQU 0 (
-    echo [PASS] ID Platform - 27 tests passed
+    echo [PASS] ID Platform - 34 tests passed
     set /a PASS+=1
 ) else (
     echo [FAIL] ID Platform tests failed

@@ -26,6 +26,11 @@ public class OidcDiscoveryController {
 
     @GetMapping("/api/info")
     public ResponseEntity<Map<String, Object>> info() {
+        var clientList = oidcService.listClients();
+        Map<String, String> clientMap = new java.util.LinkedHashMap<>();
+        for (var c : clientList) {
+            clientMap.put(c.clientId, c.name);
+        }
         return ResponseEntity.ok(Map.of(
             "service", "Raksul ID Platform",
             "version", "1.0.0",
@@ -37,12 +42,11 @@ public class OidcDiscoveryController {
                 "authorize", "http://localhost:3000/oauth2/authorize",
                 "token", "http://localhost:3000/oauth2/token",
                 "userinfo", "http://localhost:3000/oauth2/userinfo",
+                "register", "http://localhost:3000/oauth2/register",
+                "clients", "http://localhost:3000/oauth2/clients",
                 "health", "http://localhost:3000/api/health"
             ),
-            "registered_clients", Map.of(
-                "main-site", "Main Site (Port 3001)",
-                "ma-site", "MA Site (Port 3002)"
-            )
+            "registered_clients", clientMap
         ));
     }
 
@@ -160,6 +164,8 @@ th { color: #64748b; font-weight: 600; }
     <a href="#" data-tab="mig-rollback">Rollback</a>
     <a href="#" data-tab="mig-shadow">Shadow Validate</a>
     <a href="#" data-tab="mig-dualwrite">Dual Write</a>
+    <div class="group">Clients</div>
+    <a href="#" data-tab="client-register">Register Client</a>
 </div>
 <div class="main">
 
@@ -182,7 +188,7 @@ th { color: #64748b; font-weight: 600; }
         <h2>Registered Clients</h2>
         <table>
             <thead><tr><th>Client ID</th><th>Description</th><th>Redirect URI</th></tr></thead>
-            <tbody>
+            <tbody id="clients-tbody">
                 <tr><td>main-site</td><td>Main Site (Port 3001)</td><td>http://localhost:3001/callback</td></tr>
                 <tr><td>ma-site</td><td>MA Site (Port 3002)</td><td>http://localhost:3002/callback</td></tr>
             </tbody>
@@ -211,6 +217,8 @@ th { color: #64748b; font-weight: 600; }
                 <tr><td><span class="method method-post">POST</span></td><td>/oauth2/token</td><td><span class="tag tag-public">Public</span></td><td>Token exchange</td></tr>
                 <tr><td><span class="method method-get">GET</span></td><td>/oauth2/userinfo</td><td><span class="tag tag-protected">Bearer</span></td><td>Get user claims</td></tr>
                 <tr><td><span class="method method-post">POST</span></td><td>/oauth2/revoke</td><td><span class="tag tag-protected">Bearer</span></td><td>Revoke token</td></tr>
+                <tr><td><span class="method method-post">POST</span></td><td>/oauth2/register</td><td><span class="tag tag-public">Public</span></td><td>Dynamic client registration (RFC 7591)</td></tr>
+                <tr><td><span class="method method-get">GET</span></td><td>/oauth2/clients</td><td><span class="tag tag-public">Public</span></td><td>List registered OIDC clients</td></tr>
                 <tr><td><span class="method method-get">GET</span></td><td>/api/migration/status</td><td><span class="tag tag-public">Public</span></td><td>Migration status</td></tr>
                 <tr><td><span class="method method-post">POST</span></td><td>/api/migration/import</td><td><span class="tag tag-public">Public</span></td><td>Bulk import users</td></tr>
                 <tr><td><span class="method method-post">POST</span></td><td>/api/migration/shadow-validate</td><td><span class="tag tag-public">Public</span></td><td>Shadow validate credentials</td></tr>
@@ -387,6 +395,34 @@ th { color: #64748b; font-weight: 600; }
     </div>
 </div>
 
+<div class="section" id="client-register">
+    <div class="card">
+        <h2>Dynamic Client Registration (RFC 7591)</h2>
+        <p style="color:#64748b;font-size:13px;margin-bottom:12px">POST /oauth2/register - Register a new OIDC client without restarting the ID Platform</p>
+        <p style="color:#94a3b8;font-size:13px;margin-bottom:16px">New services can call this endpoint to get a client_id and client_secret, then use the standard OIDC Authorization Code flow.</p>
+        <div class="row">
+            <div><label>Client ID (unique identifier)</label><input id="creg-client-id" placeholder="my-new-service"></div>
+            <div><label>Client Name (display name)</label><input id="creg-client-name" placeholder="My New Service"></div>
+        </div>
+        <div class="row">
+            <div><label>Redirect URIs (space-separated)</label><input id="creg-redirects" placeholder="http://localhost:4000/callback"></div>
+            <div><label>Scopes</label><input id="creg-scopes" value="openid profile email" placeholder="openid profile email"></div>
+        </div>
+        <button class="btn btn-green" onclick="doRegisterClient()">Register Client</button>
+        <div class="output" id="creg-out">Client credentials will appear here. Save the client_secret - it is shown only once.</div>
+    </div>
+    <div class="card">
+        <h2>How to Onboard a New Service</h2>
+        <p style="color:#94a3b8;font-size:13px;line-height:1.7">
+            1. Register your service above (or via <code>POST /oauth2/register</code>)<br>
+            2. Use the returned <code>client_id</code> + <code>client_secret</code> in your OIDC library<br>
+            3. Point your OIDC library to the discovery endpoint: <code>http://localhost:3000/.well-known/openid-configuration</code><br>
+            4. Implement the Authorization Code + PKCE flow in your service<br>
+            5. Users can now login once on any service and access all registered services (SSO)
+        </p>
+    </div>
+</div>
+
 </div>
 </div>
 
@@ -475,11 +511,21 @@ async function loadOverview() {
         const info = await fetch('/api/info').then(r => r.json());
         document.getElementById('ov-status').textContent = info.status;
         document.getElementById('ov-issuer').textContent = info.issuer;
-        document.getElementById('ov-clients').textContent = Object.keys(info.registered_clients).length;
     } catch(e) {}
     try {
         const st = await fetch('/api/migration/status').then(r => r.json());
         document.getElementById('ov-users').textContent = st.totalActiveUsersInIdPlatform || 0;
+    } catch(e) {}
+    try {
+        const clients = await fetch('/oauth2/clients').then(r => r.json());
+        document.getElementById('ov-clients').textContent = clients.length;
+        const tbody = document.getElementById('clients-tbody');
+        tbody.innerHTML = '';
+        clients.forEach(c => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + c.client_id + '</td><td>' + (c.client_name||'') + '</td><td>' + (c.redirect_uris||[]).join(', ') + '</td>';
+            tbody.appendChild(tr);
+        });
     } catch(e) {}
 }
 
@@ -551,6 +597,17 @@ async function doDualWrite() {
     const site = document.getElementById('dw-site').value;
     const body = JSON.parse(document.getElementById('dw-body').value);
     await callPost('/api/migration/dual-write?site=' + site, body, 'dw-out');
+}
+
+async function doRegisterClient() {
+    const body = {
+        client_id: document.getElementById('creg-client-id').value,
+        client_name: document.getElementById('creg-client-name').value,
+        redirect_uris: document.getElementById('creg-redirects').value,
+        scope: document.getElementById('creg-scopes').value
+    };
+    await callPost('/oauth2/register', body, 'creg-out');
+    loadOverview();
 }
 
 loadOverview();

@@ -104,6 +104,8 @@ public class ZeroTrustFilter extends OncePerRequestFilter {
                path.equals("/api/health") ||
                path.startsWith("/oauth2/authorize") ||
                path.equals("/oauth2/token") ||
+               path.equals("/oauth2/register") ||
+               path.equals("/oauth2/clients") ||
                path.equals("/api/auth/login") ||
                path.equals("/api/auth/register") ||
                path.equals("/api/migration/import") ||

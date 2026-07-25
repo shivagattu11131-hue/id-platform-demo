@@ -147,4 +147,116 @@ class OidcControllerTests {
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody()).contains("Unsupported response_type");
     }
+
+    @Test
+    void dynamicClientRegistrationSucceeds() {
+        Map<String, String> request = Map.of(
+                "client_id", "test-dynamic-client",
+                "client_name", "Test Dynamic Service",
+                "redirect_uris", "http://localhost:4000/callback",
+                "scope", "openid profile email"
+        );
+
+        ResponseEntity<Map> resp = restTemplate.postForEntity(
+                "/oauth2/register", request, Map.class);
+
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        Map body = resp.getBody();
+        assertThat(body).isNotNull();
+        assertThat(body.get("client_id")).isEqualTo("test-dynamic-client");
+        assertThat(body.get("client_secret")).isNotNull();
+        assertThat(body.get("client_name")).isEqualTo("Test Dynamic Service");
+        assertThat(body.get("redirect_uris")).isNotNull();
+        assertThat(body.get("grant_types")).isEqualTo(List.of("authorization_code", "refresh_token"));
+        assertThat(body.get("response_types")).isEqualTo(List.of("code"));
+    }
+
+    @Test
+    void dynamicClientRegistrationRejectsDuplicateClientId() {
+        Map<String, String> request = Map.of(
+                "client_id", "main-site",
+                "client_name", "Duplicate",
+                "redirect_uris", "http://localhost:4000/callback"
+        );
+
+        ResponseEntity<Map> resp = restTemplate.postForEntity(
+                "/oauth2/register", request, Map.class);
+
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.valueOf(409));
+        assertThat(resp.getBody().get("error")).isEqualTo("invalid_client_metadata");
+    }
+
+    @Test
+    void dynamicClientRegistrationRejectsMissingClientId() {
+        Map<String, String> request = Map.of(
+                "client_name", "No ID Service",
+                "redirect_uris", "http://localhost:4000/callback"
+        );
+
+        ResponseEntity<Map> resp = restTemplate.postForEntity(
+                "/oauth2/register", request, Map.class);
+
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(resp.getBody().get("error")).isEqualTo("invalid_request");
+    }
+
+    @Test
+    void dynamicClientRegistrationRejectsMissingRedirectUris() {
+        Map<String, String> request = Map.of(
+                "client_id", "no-redirects",
+                "client_name", "No Redirects"
+        );
+
+        ResponseEntity<Map> resp = restTemplate.postForEntity(
+                "/oauth2/register", request, Map.class);
+
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(resp.getBody().get("error")).isEqualTo("invalid_request");
+    }
+
+    @Test
+    void listClientsReturnsRegisteredClients() {
+        ResponseEntity<List> resp = restTemplate.getForEntity(
+                "/oauth2/clients", List.class);
+
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        List body = resp.getBody();
+        assertThat(body).isNotNull();
+        assertThat(body.size()).isGreaterThanOrEqualTo(2);
+
+        List clientIds = body.stream()
+                .map(c -> ((Map) c).get("client_id"))
+                .toList();
+        assertThat(clientIds).contains("main-site", "ma-site");
+    }
+
+    @Test
+    void discoveryDocumentIncludesRegistrationEndpoint() {
+        ResponseEntity<Map> resp = restTemplate.getForEntity(
+                "/.well-known/openid-configuration", Map.class);
+
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(resp.getBody().get("registration_endpoint")).isNotNull();
+        assertThat(resp.getBody().get("registration_endpoint").toString()).endsWith("/oauth2/register");
+    }
+
+    @Test
+    void newlyRegisteredClientAppearsInClientList() {
+        Map<String, String> request = Map.of(
+                "client_id", "list-test-client",
+                "client_name", "List Test Service",
+                "redirect_uris", "http://localhost:5000/callback"
+        );
+
+        restTemplate.postForEntity("/oauth2/register", request, Map.class);
+
+        ResponseEntity<List> resp = restTemplate.getForEntity(
+                "/oauth2/clients", List.class);
+
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        List clientIds = resp.getBody().stream()
+                .map(c -> ((Map) c).get("client_id"))
+                .toList();
+        assertThat(clientIds).contains("list-test-client");
+    }
 }

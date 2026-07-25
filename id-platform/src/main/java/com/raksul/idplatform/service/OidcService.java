@@ -2,12 +2,15 @@ package com.raksul.idplatform.service;
 
 import com.raksul.idplatform.config.JwksConfig;
 import com.raksul.idplatform.model.AuthorizationCode;
+import com.raksul.idplatform.model.OidcClient;
 import com.raksul.idplatform.model.User;
 import com.raksul.idplatform.repository.AuthorizationCodeRepository;
+import com.raksul.idplatform.repository.OidcClientRepository;
 import com.raksul.idplatform.repository.UserRepository;
 import com.raksul.idplatform.repository.AuthTokenRepository;
 import com.raksul.idplatform.model.AuthToken;
 import io.jsonwebtoken.Claims;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +45,9 @@ public class OidcService {
     private AuthorizationCodeRepository authorizationCodeRepository;
 
     @Autowired
+    private OidcClientRepository oidcClientRepository;
+
+    @Autowired
     private TokenService tokenService;
 
     @Value("${id-platform.issuer}")
@@ -52,25 +58,63 @@ public class OidcService {
 
     private final Map<String, ClientConfig> clients = new ConcurrentHashMap<>();
 
-    @Autowired
-    public void initClients(
-            @Value("${id-platform.clients.main-site.client-id:main-site}") String mainSiteClientId,
-            @Value("${id-platform.clients.main-site.client-secret:main-site-secret}") String mainSiteClientSecret,
-            @Value("${id-platform.clients.main-site.redirect-uris:http://localhost:3001/callback}") List<String> mainSiteRedirectUris,
-            @Value("${id-platform.clients.main-site.scope:openid profile email}") String mainSiteScope,
-            @Value("${id-platform.clients.main-site.name:Main Site}") String mainSiteName,
-            @Value("${id-platform.clients.ma-site.client-id:ma-site}") String maSiteClientId,
-            @Value("${id-platform.clients.ma-site.client-secret:ma-site-secret}") String maSiteClientSecret,
-            @Value("${id-platform.clients.ma-site.redirect-uris:http://localhost:3002/callback}") List<String> maSiteRedirectUris,
-            @Value("${id-platform.clients.ma-site.scope:openid profile email}") String maSiteScope,
-            @Value("${id-platform.clients.ma-site.name:MA Site}") String maSiteName) {
+    @Value("${id-platform.clients.main-site.client-id:main-site}") String mainSiteClientId;
+    @Value("${id-platform.clients.main-site.client-secret:main-site-secret}") String mainSiteClientSecret;
+    @Value("${id-platform.clients.main-site.redirect-uris:http://localhost:3001/callback}") List<String> mainSiteRedirectUris;
+    @Value("${id-platform.clients.main-site.scope:openid profile email}") String mainSiteScope;
+    @Value("${id-platform.clients.main-site.name:Main Site}") String mainSiteName;
+    @Value("${id-platform.clients.ma-site.client-id:ma-site}") String maSiteClientId;
+    @Value("${id-platform.clients.ma-site.client-secret:ma-site-secret}") String maSiteClientSecret;
+    @Value("${id-platform.clients.ma-site.redirect-uris:http://localhost:3002/callback}") List<String> maSiteRedirectUris;
+    @Value("${id-platform.clients.ma-site.scope:openid profile email}") String maSiteScope;
+    @Value("${id-platform.clients.ma-site.name:MA Site}") String maSiteName;
 
-        clients.put(mainSiteClientId, new ClientConfig(mainSiteClientId, mainSiteClientSecret,
-                mainSiteRedirectUris, mainSiteScope, mainSiteName));
-        clients.put(maSiteClientId, new ClientConfig(maSiteClientId, maSiteClientSecret,
-                maSiteRedirectUris, maSiteScope, maSiteName));
+    @PostConstruct
+    public void initClients() {
+        seedClient(mainSiteClientId, mainSiteClientSecret, mainSiteRedirectUris, mainSiteScope, mainSiteName);
+        seedClient(maSiteClientId, maSiteClientSecret, maSiteRedirectUris, maSiteScope, maSiteName);
+
+        List<OidcClient> dbClients = oidcClientRepository.findAllByActive(true);
+        for (OidcClient dbClient : dbClients) {
+            if (!clients.containsKey(dbClient.getClientId())) {
+                List<String> uris = Arrays.asList(dbClient.getRedirectUris().split(","));
+                clients.put(dbClient.getClientId(), new ClientConfig(
+                        dbClient.getClientId(), dbClient.getClientSecret(),
+                        uris, dbClient.getScopes(), dbClient.getClientName()));
+            }
+        }
 
         log.info("Loaded {} OIDC clients: {}", clients.size(), clients.keySet());
+    }
+
+    private void seedClient(String clientId, String clientSecret, List<String> redirectUris, String scope, String name) {
+        if (!oidcClientRepository.existsByClientId(clientId)) {
+            String urisStr = String.join(",", redirectUris);
+            OidcClient entity = new OidcClient(clientId, clientSecret, urisStr, scope, name);
+            oidcClientRepository.save(entity);
+        }
+        clients.put(clientId, new ClientConfig(clientId, clientSecret, redirectUris, scope, name));
+    }
+
+    @Transactional
+    public ClientConfig registerClient(String clientId, String clientSecret, List<String> redirectUris, String scopes, String name) {
+        if (clients.containsKey(clientId) || oidcClientRepository.existsByClientId(clientId)) {
+            return null;
+        }
+
+        String urisStr = String.join(",", redirectUris);
+        OidcClient entity = new OidcClient(clientId, clientSecret, urisStr, scopes, name);
+        oidcClientRepository.save(entity);
+
+        ClientConfig config = new ClientConfig(clientId, clientSecret, redirectUris, scopes, name);
+        clients.put(clientId, config);
+
+        log.info("Registered new OIDC client: {} ({})", name, clientId);
+        return config;
+    }
+
+    public List<ClientConfig> listClients() {
+        return new ArrayList<>(clients.values());
     }
 
     public ClientConfig getClient(String clientId) {
@@ -168,6 +212,7 @@ public class OidcService {
         doc.put("userinfo_endpoint", issuer + "/oauth2/userinfo");
         doc.put("jwks_uri", issuer + "/jwks.json");
         doc.put("revocation_endpoint", issuer + "/oauth2/revoke");
+        doc.put("registration_endpoint", issuer + "/oauth2/register");
         doc.put("response_types_supported", List.of("code"));
         doc.put("grant_types_supported", List.of("authorization_code", "refresh_token"));
         doc.put("subject_types_supported", List.of("public"));
