@@ -33,7 +33,28 @@ id-platform:
   jwt:
     access-token-expiry: 900000        # 15 minutes
     refresh-token-expiry: 604800000    # 7 days
+    id-token-expiry: 600000            # 10 minutes
     algorithm: RS256
+
+  oidc:
+    authorization-code-expiry: 600000  # 10 minutes
+    require-pkce: true
+
+  clients:
+    main-site:
+      client-id: main-site
+      client-secret: main-site-secret
+      redirect-uris:
+        - http://localhost:3001/callback
+      scope: openid profile email
+      name: Main Site
+    ma-site:
+      client-id: ma-site
+      client-secret: ma-site-secret
+      redirect-uris:
+        - http://localhost:3002/callback
+      scope: openid profile email
+      name: MA Site
 
   migration:
     main-site:

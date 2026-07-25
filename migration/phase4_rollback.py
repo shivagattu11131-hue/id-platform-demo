@@ -6,6 +6,9 @@ if issues are detected after cutover.
 import requests
 import json
 import time
+import hashlib
+import base64
+import secrets
 
 ID_PLATFORM_URL = "http://localhost:3000"
 MAIN_SITE_URL = "http://localhost:3001"
@@ -37,17 +40,86 @@ def legacy_login(site_url, email, password):
     return resp
 
 
-def idp_login(email, password):
-    """Login via ID Platform."""
+def generate_pkce():
+    """Generate PKCE code_verifier and code_challenge."""
+    code_verifier = secrets.token_urlsafe(32)
+    digest = hashlib.sha256(code_verifier.encode('ascii')).digest()
+    code_challenge = base64.urlsafe_b64encode(digest).rstrip(b'=').decode('ascii')
+    return code_verifier, code_challenge
+
+
+def idp_authorize(client_id, redirect_uri, scope="openid profile email"):
+    """Get authorization page URL."""
+    code_verifier, code_challenge = generate_pkce()
+    
+    auth_url = (
+        f"{ID_PLATFORM_URL}/oauth2/authorize"
+        f"?response_type=code"
+        f"&client_id={client_id}"
+        f"&redirect_uri={redirect_uri}"
+        f"&scope={scope}"
+        f"&state={secrets.token_urlsafe(16)}"
+        f"&code_challenge={code_challenge}"
+        f"&code_challenge_method=S256"
+    )
+    
+    return auth_url, code_verifier
+
+
+def idp_authorize_with_credentials(auth_url, email, password, code_verifier):
+    """Complete authorization with user credentials."""
+    from urllib.parse import urlparse, parse_qs
+    parsed = urlparse(auth_url)
+    params = parse_qs(parsed.query)
+    
+    resp = requests.post(
+        f"{ID_PLATFORM_URL}/oauth2/authorize",
+        data={
+            "response_type": params.get("response_type", ["code"])[0],
+            "client_id": params.get("client_id", [""])[0],
+            "redirect_uri": params.get("redirect_uri", [""])[0],
+            "scope": params.get("scope", ["openid"])[0],
+            "state": params.get("state", [""])[0],
+            "nonce": params.get("nonce", [""])[0] if "nonce" in params else "",
+            "code_challenge": params.get("code_challenge", [""])[0],
+            "code_challenge_method": params.get("code_challenge_method", ["S256"])[0],
+            "email": email,
+            "password": password
+        },
+        allow_redirects=False
+    )
+    
+    return resp
+
+
+def exchange_code_for_token(code, client_id, code_verifier, redirect_uri):
+    """Exchange authorization code for tokens."""
     resp = requests.post(
         f"{ID_PLATFORM_URL}/oauth2/token",
         json={
-            "grant_type": "password",
-            "email": email,
-            "password": password
+            "grant_type": "authorization_code",
+            "code": code,
+            "client_id": client_id,
+            "code_verifier": code_verifier,
+            "redirect_uri": redirect_uri
         }
     )
     return resp
+
+
+def idp_login(client_id, redirect_uri, email, password):
+    """Login via ID Platform using Authorization Code + PKCE."""
+    auth_url, code_verifier = idp_authorize(client_id, redirect_uri)
+    
+    auth_resp = idp_authorize_with_credentials(auth_url, email, password, code_verifier)
+    if auth_resp.status_code == 302:
+        location = auth_resp.headers.get('Location', '')
+        if 'code=' in location:
+            code = location.split('code=')[1].split('&')[0]
+            token_resp = exchange_code_for_token(code, client_id, code_verifier, redirect_uri)
+            return token_resp
+    
+    return None
 
 
 def run_phase4():
@@ -66,8 +138,8 @@ def run_phase4():
 
     # === Step 2: Verify Current State ===
     print("\n  --- Step 2: Verify Current State (ID Platform active) ---")
-    login_resp = idp_login("john@example.com", "password123")
-    if login_resp.status_code == 200:
+    login_resp = idp_login("main-site", "http://localhost:3001/callback", "john@example.com", "password123")
+    if login_resp and login_resp.status_code == 200:
         print("  [OK] Currently: ID Platform auth working")
     else:
         print("  [WARN] ID Platform auth already failing")

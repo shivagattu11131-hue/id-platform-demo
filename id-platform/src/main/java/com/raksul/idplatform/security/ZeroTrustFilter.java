@@ -99,7 +99,7 @@ public class ZeroTrustFilter extends OncePerRequestFilter {
         return path.startsWith("/.well-known") ||
                path.equals("/jwks.json") ||
                path.equals("/api/health") ||
-               path.equals("/oauth2/authorize") ||
+               path.startsWith("/oauth2/authorize") ||
                path.equals("/oauth2/token") ||
                path.equals("/api/auth/login") ||
                path.equals("/api/auth/register") ||
@@ -110,7 +110,10 @@ public class ZeroTrustFilter extends OncePerRequestFilter {
                path.equals("/api/migration/rollback") ||
                path.startsWith("/api/migration/dual-write") ||
                path.startsWith("/h2-console") ||
-               path.startsWith("/error");
+               path.startsWith("/error") ||
+               path.startsWith("/css/") ||
+               path.startsWith("/js/") ||
+               path.startsWith("/images/");
     }
 
     private void sendError(HttpServletResponse response, int status, String message) throws IOException {

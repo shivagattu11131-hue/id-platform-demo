@@ -11,6 +11,7 @@ com\raksul\idplatform\service\TokenService.class
 com\raksul\idplatform\model\User.class
 com\raksul\idplatform\controller\OidcDiscoveryController.class
 com\raksul\idplatform\model\MigrationResult.class
+com\raksul\idplatform\service\OidcService$ClientConfig.class
 com\raksul\idplatform\model\AuthToken$TokenType.class
 com\raksul\idplatform\model\LegacyUser.class
 com\raksul\idplatform\repository\MigrationStatusRepository.class
@@ -23,6 +24,8 @@ com\raksul\idplatform\model\AuthResponse$UserInfo.class
 com\raksul\idplatform\controller\MigrationController.class
 com\raksul\idplatform\config\SecurityConfig.class
 com\raksul\idplatform\service\AuthService.class
+com\raksul\idplatform\model\AuthorizationCode.class
+com\raksul\idplatform\repository\AuthorizationCodeRepository.class
 com\raksul\idplatform\model\AuthRequest.class
 com\raksul\idplatform\security\ZeroTrustFilter.class
 com\raksul\idplatform\service\MigrationService.class

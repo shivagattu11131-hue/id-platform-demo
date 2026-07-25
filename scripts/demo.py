@@ -13,6 +13,7 @@ SEPARATOR = "=" * 70
 ID_PLATFORM_URL = "http://localhost:3000"
 MAIN_SITE_URL = "http://localhost:3001"
 MA_SITE_URL = "http://localhost:3002"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def print_banner():
@@ -67,7 +68,7 @@ def run_import(module_name, title):
 
     try:
         result = subprocess.run(
-            [sys.executable, f"migration/{module_name}.py"],
+            [sys.executable, os.path.join(BASE_DIR, "migration", f"{module_name}.py")],
             capture_output=True,
             text=True,
             timeout=60

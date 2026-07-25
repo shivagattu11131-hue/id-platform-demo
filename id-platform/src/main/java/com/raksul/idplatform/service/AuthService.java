@@ -109,6 +109,10 @@ public class AuthService {
         log.info("User deactivated: {} (ID: {})", user.getEmail(), user.getId());
     }
 
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email).orElse(null);
+    }
+
     public boolean validateCredentials(String email, String password) {
         Optional<User> userOpt = userRepository.findByEmail(email);
         if (userOpt.isEmpty()) return false;
