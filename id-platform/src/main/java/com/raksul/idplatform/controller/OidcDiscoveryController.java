@@ -165,6 +165,7 @@ th { color: #64748b; font-weight: 600; }
     <a href="#" data-tab="mig-shadow">Shadow Validate</a>
     <a href="#" data-tab="mig-dualwrite">Dual Write</a>
     <div class="group">Clients</div>
+    <a href="#" data-tab="client-list">List Clients</a>
     <a href="#" data-tab="client-register">Register Client</a>
 </div>
 <div class="main">
@@ -395,6 +396,32 @@ th { color: #64748b; font-weight: 600; }
     </div>
 </div>
 
+<div class="section" id="client-list">
+    <div class="card">
+        <h2>Registered OIDC Clients</h2>
+        <p style="color:#64748b;font-size:13px;margin-bottom:12px">GET /oauth2/clients - List all registered OIDC clients and their configurations</p>
+        <button class="btn btn-blue" onclick="callGet('/oauth2/clients','clist-out')">Fetch Clients</button>
+        <div class="output" id="clist-out">Click Fetch to load all registered clients...</div>
+    </div>
+    <div class="card">
+        <h2>Client Table View</h2>
+        <button class="btn btn-blue" onclick="loadClientTable()">Refresh Table</button>
+        <table style="margin-top:12px">
+            <thead><tr><th>Client ID</th><th>Client Name</th><th>Redirect URIs</th><th>Scopes</th></tr></thead>
+            <tbody id="clist-tbody"><tr><td colspan="4">Loading...</td></tr></tbody>
+        </table>
+    </div>
+    <div class="card">
+        <h2>How to Use</h2>
+        <p style="color:#94a3b8;font-size:13px;line-height:1.7">
+            Any service can discover available OIDC clients via this endpoint. Use it to:<br>
+            - Verify your client is registered before starting the OIDC flow<br>
+            - List all services that share the same ID Platform<br>
+            - Debug OIDC integration issues
+        </p>
+    </div>
+</div>
+
 <div class="section" id="client-register">
     <div class="card">
         <h2>Dynamic Client Registration (RFC 7591)</h2>
@@ -608,9 +635,30 @@ async function doRegisterClient() {
     };
     await callPost('/oauth2/register', body, 'creg-out');
     loadOverview();
+    loadClientTable();
+}
+
+async function loadClientTable() {
+    try {
+        const clients = await fetch('/oauth2/clients').then(r => r.json());
+        const tbody = document.getElementById('clist-tbody');
+        tbody.innerHTML = '';
+        if (clients.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="color:#64748b">No clients registered yet</td></tr>';
+            return;
+        }
+        clients.forEach(c => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td><code>' + c.client_id + '</code></td><td>' + (c.client_name||'') + '</td><td style="font-size:12px">' + (c.redirect_uris||[]).join('<br>') + '</td><td>' + (c.scope||'') + '</td>';
+            tbody.appendChild(tr);
+        });
+    } catch(e) {
+        document.getElementById('clist-tbody').innerHTML = '<tr><td colspan="4" style="color:#f87171">Error loading clients</td></tr>';
+    }
 }
 
 loadOverview();
+loadClientTable();
 </script>
 </body>
 </html>
