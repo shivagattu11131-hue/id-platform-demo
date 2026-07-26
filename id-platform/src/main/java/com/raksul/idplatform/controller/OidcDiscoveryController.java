@@ -83,6 +83,7 @@ public class OidcDiscoveryController {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Raksul ID Platform - Dashboard</title>
 <style>
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; }
 .topbar { background: #1e293b; border-bottom: 1px solid #334155; padding: 12px 24px; display: flex; align-items: center; gap: 12px; }
@@ -766,6 +767,11 @@ async function startPhasedDemo() {
         });
         continueDiv.innerHTML = '';
 
+        const color = PHASE_COLORS[i] || '#94a3b8';
+        const processingId = 'processing-' + i;
+        phasesDiv.innerHTML += '<div id="' + processingId + '" style="margin-bottom:8px;padding:12px 16px;background:#1e293b;border:1px solid ' + color + ';border-radius:8px;display:flex;align-items:center;gap:12px"><div style="width:20px;height:20px;border:3px solid ' + color + ';border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite"></div><div><div style="color:' + color + ';font-weight:600;font-size:14px">Phase ' + i + ': ' + PHASE_NAMES[i] + '</div><div style="color:#94a3b8;font-size:12px;margin-top:2px">Processing...</div></div></div>';
+        phasesDiv.scrollTop = phasesDiv.scrollHeight;
+
         try {
             const fetchOpts = { method: 'POST' };
             if (i === 0 && (mainData || maData)) {
@@ -774,6 +780,8 @@ async function startPhasedDemo() {
             }
             const resp = await fetch('/api/migration/run-phase/' + i, fetchOpts);
             const data = await resp.json();
+            const el = document.getElementById(processingId);
+            if (el) el.remove();
             phasesDiv.innerHTML += '<div id="phased-phase-' + i + '"></div>';
             renderPhaseCard(document.getElementById('phased-phase-' + i), data);
 
@@ -791,6 +799,8 @@ async function startPhasedDemo() {
                 continueDiv.innerHTML = '<div style="margin-top:16px;padding:12px 16px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:8px;color:#34d399;font-size:14px;font-weight:600">All 5 phases completed successfully. Migration demo finished.</div>';
             }
         } catch(e) {
+            const el = document.getElementById(processingId);
+            if (el) el.remove();
             phasesDiv.innerHTML += '<div style="color:#f87171;margin-top:8px">Phase ' + i + ' error: ' + e.message + '</div>';
             break;
         }
