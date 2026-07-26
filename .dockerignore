@@ -1,0 +1,37 @@
+.git
+.gitignore
+*.md
+LICENSE
+
+# Java/Maven
+id-platform/target/
+id-platform/.mvn/
+id-platform/mvnw
+id-platform/mvnw.cmd
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+venv/
+.venv/
+
+# Databases (ephemeral in containers)
+*.db
+*.mv.db
+*.trace.db
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Deploy artifacts
+deploy/release.tar
+deploy/*.tar

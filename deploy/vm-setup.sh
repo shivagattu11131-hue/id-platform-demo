@@ -1,0 +1,1 @@
+sudo mkdir -p /opt/raksul-id-platform && sudo tar -xf /tmp/raksul-docker-release.tar -C /opt/raksul-id-platform && sudo chmod +x /opt/raksul-id-platform/deploy/docker-deploy.sh && cd /opt/raksul-id-platform/deploy && sudo bash docker-deploy.sh

@@ -13,7 +13,8 @@ app.secret_key = secrets.token_hex(32)
 CORS(app, origins="*", supports_credentials=True)
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'ma_site.db')
-ID_PLATFORM_URL = "http://localhost:3000"
+ID_PLATFORM_URL = os.environ.get("ID_PLATFORM_URL", "http://localhost:3000")
+EXTERNAL_BASE_URL = os.environ.get("EXTERNAL_BASE_URL", "http://localhost")
 
 
 def get_db():
@@ -61,7 +62,7 @@ def index():
 
     if oidc_enabled and 'user_id' in session:
         userinfo = session.get('user_info', {})
-        return render_template_string(LOGGED_IN_PAGE, user=userinfo, oidc_enabled=True)
+        return render_template_string(LOGGED_IN_PAGE, user=userinfo, oidc_enabled=True, external_url=EXTERNAL_BASE_URL)
 
     if oidc_enabled:
         return render_template_string(HOME_PAGE_OIDC)
@@ -71,7 +72,7 @@ def index():
             member = conn.execute('SELECT * FROM members WHERE id = ?', (session['user_id'],)).fetchone()
             conn.close()
             if member:
-                return render_template_string(LOGGED_IN_PAGE, user=dict(member), oidc_enabled=False)
+                return render_template_string(LOGGED_IN_PAGE, user=dict(member), oidc_enabled=False, external_url=EXTERNAL_BASE_URL)
         return render_template_string(HOME_PAGE)
 
 
@@ -91,7 +92,7 @@ def login_oidc():
     params = {
         'response_type': 'code',
         'client_id': 'ma-site',
-        'redirect_uri': 'http://localhost:3002/callback',
+        'redirect_uri': f'{EXTERNAL_BASE_URL}:3002/callback',
         'scope': 'openid profile email',
         'state': session['oauth_state'],
         'code_challenge': code_challenge,
@@ -115,7 +116,7 @@ def callback():
         'code': code,
         'client_id': 'ma-site',
         'code_verifier': code_verifier,
-        'redirect_uri': 'http://localhost:3002/callback'
+        'redirect_uri': f'{EXTERNAL_BASE_URL}:3002/callback'
     })
 
     if token_resp.status_code == 200:
@@ -152,7 +153,7 @@ def do_login():
 
     if member and member['password_md5'] == hash_password(password):
         session['user_id'] = member['id']
-        return render_template_string(LOGGED_IN_PAGE, user=dict(member), oidc_enabled=False)
+        return render_template_string(LOGGED_IN_PAGE, user=dict(member), oidc_enabled=False, external_url=EXTERNAL_BASE_URL)
 
     return render_template_string(HOME_PAGE, error="Invalid credentials")
 
@@ -542,10 +543,10 @@ LOGGED_IN_PAGE = """
 
             {% if oidc_enabled %}
             <p>You are logged in via the unified ID Platform. You can now access Main Site without re-login.</p>
-            <a href="http://localhost:3001/" class="btn btn-primary">Go to Main Site (SSO)</a>
+            <a href="{{ external_url }}:3001/" class="btn btn-primary">Go to Main Site (SSO)</a>
             {% else %}
             <p>You are logged in via the legacy session-based authentication.</p>
-            <a href="http://localhost:3001/" class="btn btn-primary">Go to Main Site</a>
+            <a href="{{ external_url }}:3001/" class="btn btn-primary">Go to Main Site</a>
             {% endif %}
             <a href="/do-logout" class="btn btn-danger">Logout</a>
             {% if not oidc_enabled %}
@@ -613,4 +614,4 @@ if __name__ == '__main__':
     print("  Table: members (email, password_md5, first_name, last_name)")
     print("  Features: Registration, Login/Logout, Profile, Cancel Membership")
     print("=" * 60)
-    app.run(port=3002, debug=True)
+    app.run(host='0.0.0.0', port=3002, debug=os.environ.get("FLASK_DEBUG", "false").lower() == "true")

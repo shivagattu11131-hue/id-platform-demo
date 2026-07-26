@@ -1,0 +1,53 @@
+services:
+  id-platform:
+    build:
+      context: .
+      dockerfile: Dockerfile.id-platform
+    container_name: id-platform
+    ports:
+      - "3000:3000"
+    environment:
+      - ID_PLATFORM_ISSUER=http://${VM_IP:-localhost}:3000
+      - MAIN_SITE_REDIRECT_URI=http://${VM_IP:-localhost}:3001/callback
+      - MA_SITE_REDIRECT_URI=http://${VM_IP:-localhost}:3002/callback
+      - MAIN_SITE_URL=http://legacy-main-site:3001
+      - MA_SITE_URL=http://legacy-ma-site:3002
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  legacy-main-site:
+    build:
+      context: .
+      dockerfile: Dockerfile.legacy-main-site
+    container_name: legacy-main-site
+    ports:
+      - "3001:3001"
+    environment:
+      - ID_PLATFORM_URL=http://id-platform:3000
+      - EXTERNAL_BASE_URL=http://${VM_IP:-localhost}
+      - FLASK_DEBUG=false
+    depends_on:
+      id-platform:
+        condition: service_healthy
+    restart: unless-stopped
+
+  legacy-ma-site:
+    build:
+      context: .
+      dockerfile: Dockerfile.legacy-ma-site
+    container_name: legacy-ma-site
+    ports:
+      - "3002:3002"
+    environment:
+      - ID_PLATFORM_URL=http://id-platform:3000
+      - EXTERNAL_BASE_URL=http://${VM_IP:-localhost}
+      - FLASK_DEBUG=false
+    depends_on:
+      id-platform:
+        condition: service_healthy
+    restart: unless-stopped

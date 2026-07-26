@@ -29,7 +29,7 @@ spring:
     default-property-inclusion: non_null
 
 id-platform:
-  issuer: http://localhost:3000
+  issuer: ${ID_PLATFORM_ISSUER:http://localhost:3000}
   jwt:
     access-token-expiry: 900000        # 15 minutes
     refresh-token-expiry: 604800000    # 7 days
@@ -45,24 +45,24 @@ id-platform:
       client-id: main-site
       client-secret: main-site-secret
       redirect-uris:
-        - http://localhost:3001/callback
+        - ${MAIN_SITE_REDIRECT_URI:http://localhost:3001/callback}
       scope: openid profile email
       name: Main Site
     ma-site:
       client-id: ma-site
       client-secret: ma-site-secret
       redirect-uris:
-        - http://localhost:3002/callback
+        - ${MA_SITE_REDIRECT_URI:http://localhost:3002/callback}
       scope: openid profile email
       name: MA Site
 
   migration:
     main-site:
       name: Main Site
-      url: http://localhost:3001
+      url: ${MAIN_SITE_URL:http://localhost:3001}
     ma-site:
       name: MA Site
-      url: http://localhost:3002
+      url: ${MA_SITE_URL:http://localhost:3002}
 
 logging:
   level:
