@@ -1,35 +1,78 @@
-# Build artifacts
-target/
+#########################################
+# Maven / Java Build
+#########################################
+
+# Ignore all Maven target directories
+**/target/
+
+# Compiled Java classes
 *.class
+
+# Packaged artifacts
 *.jar
 *.war
+*.ear
 
+#########################################
+# Test Reports
+#########################################
+
+**/surefire-reports/
+**/failsafe-reports/
+
+#########################################
+# Databases
+#########################################
+
+# H2 Database
+*.mv.db
+*.trace.db
+
+# SQLite databases
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+#########################################
+# Logs
+#########################################
+
+*.log
+logs/
+
+#########################################
+# IDE Files
+#########################################
+
+.idea/
+.vscode/
+.settings/
+.classpath
+.project
+*.iml
+
+#########################################
+# OS Files
+#########################################
+
+.DS_Store
+Thumbs.db
+
+#########################################
 # Python
+#########################################
+
 __pycache__/
 *.pyc
 *.pyo
 venv/
 .venv/
 
-# Databases
-*.db
-*.mv.db
-*.trace.db
+#########################################
+# Misc
+#########################################
 
-# Runtime logs
-*.log
-
-# IDE
-.idea/
-.vscode/
-*.iml
-.settings/
-.classpath
-.project
-
-# OS
-.DS_Store
-Thumbs.db
-
-.id-platform/target/
-*.class
+*.tmp
+*.bak
+*.swp
