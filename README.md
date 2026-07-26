@@ -1,236 +1,311 @@
-# Raksul ID Platform - Migration Demo
+# Raksul ID Platform — Unified Identity Migration Demo
 
-## Overview
+A working demonstration of migrating two independent legacy authentication systems into a single Identity Provider (IdP) using **Java Spring Boot** with full **OpenID Connect (OIDC)** support.
 
-This project demonstrates the migration from two independent legacy authentication systems (Ruby on Rails monoliths) to a unified Identity Provider (IdP) using **Java Spring Boot** with **OpenID Connect (OIDC)**.
+## Business Scenario
 
-### Scenario
-- **Main Site**: E-commerce platform with 3M customers, ~100M yen/day sales
-- **MA Site**: Acquired company with 100K members, 20K MAU
-- **Goal**: Unify auth systems into a single ID Platform with SSO
+| | Main Site | MA Site (Acquired) |
+|---|---|---|
+| **Type** | E-commerce platform | Acquired company platform |
+| **Users** | ~3M customers | ~100K members |
+| **Password Hash** | SHA-256 + salt | Plain MD5 |
+| **DB Schema** | `password_hash` column | `password_md5` column |
 
-### Tech Stack
-| Component | Technology |
-|-----------|-----------|
-| ID Platform | Java 17, Spring Boot 3, OIDC, JWT (RS256) |
-| Legacy Sites | Python Flask (simulating Ruby on Rails) |
-| Database | H2 (demo) / Aurora MySQL (production) |
-| Security | Zero-trust, RSA-256 token signing |
-| Infrastructure | AWS ECS, EC2, Aurora MySQL, CloudFront, Lambda |
+**Goal:** Unify both auth systems into a single IdP with SSO, zero downtime, and no forced password resets.
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Users / Browsers                      │
+└───────────┬──────────────────┬──────────────────────────┘
+            │                  │
+            ▼                  ▼
+┌───────────────────┐  ┌──────────────────────────────────┐
+│   ID Platform     │  │        Dashboard UI               │
+│   (Port 3000)     │◄─┤  Migration phases + SSE streaming │
+│                   │  └──────────────────────────────────┘
+│  ┌─────────────┐  │
+│  │ OIDC Engine │  │         ┌──────────────────────┐
+│  │ RS256 JWT   │  │◄────────│  Legacy Main Site    │
+│  │ PKCE        │  │  OIDC   │  (Port 3001)         │
+│  └─────────────┘  │  Fed    │  Python Flask/SQLite │
+│  ┌─────────────┐  │         │  SHA-256+salt        │
+│  │ Migration   │  │         └──────────────────────┘
+│  │ Engine      │  │
+│  │ Import      │  │         ┌──────────────────────┐
+│  │ Shadow      │  │◄────────│  Legacy MA Site      │
+│  │ Dual-Write  │  │  OIDC   │  (Port 3002)         │
+│  │ Cutover     │  │  Fed    │  Python Flask/SQLite │
+│  │ Rollback    │  │         │  Plain MD5            │
+│  └─────────────┘  │         └──────────────────────┘
+└───────────────────┘
+         │
+         ▼
+┌───────────────────┐
+│  H2 Database      │
+│  (Aurora MySQL    │
+│   in production)  │
+└───────────────────┘
+```
 
 ---
 
 ## Project Structure
 
 ```
-id-platform-demo/
-├── id-platform/                    # Java Spring Boot - Core ID Platform
-│   ├── pom.xml
+raksul-id-platform-demo/
+├── id-platform/                          # Java 17 / Spring Boot 3 IdP
 │   └── src/main/java/com/raksul/idplatform/
-│       ├── IdPlatformApplication.java
-│       ├── config/
-│       │   └── JwksConfig.java          # RSA key pair for JWT signing
 │       ├── controller/
-│       │   ├── AuthController.java      # /api/auth/* endpoints
-│       │   ├── OidcController.java      # /oauth2/* OIDC endpoints
-│       │   └── MigrationController.java # /api/migration/* endpoints
-│       ├── model/
-│       │   ├── User.java                # User entity
-│       │   ├── AuthToken.java           # Token entity
-│       │   ├── MigrationStatus.java     # Migration state tracking
-│       │   ├── AuthRequest.java         # Request DTOs
-│       │   ├── AuthResponse.java        # Response DTOs
-│       │   ├── LegacyUser.java          # Legacy user DTO
-│       │   ├── MigrationResult.java     # Migration result DTO
-│       │   └── ShadowValidationResult.java
-│       ├── repository/
-│       │   ├── UserRepository.java
-│       │   ├── AuthTokenRepository.java
-│       │   └── MigrationStatusRepository.java
+│       │   ├── AuthController.java       # /api/auth/login, /register
+│       │   ├── OidcController.java       # /oauth2/authorize, /token, /userinfo
+│       │   ├── OidcDiscoveryController.java  # Dashboard UI + /.well-known/*
+│       │   └── MigrationController.java  # /api/migration/* + SSE endpoint
 │       ├── service/
-│       │   ├── AuthService.java         # Registration, login, profile
-│       │   ├── TokenService.java        # JWT generation & validation
-│       │   ├── OidcService.java         # OIDC discovery, JWKS, userinfo
-│       │   └── MigrationService.java    # Bulk import, dual-write, cutover, rollback
-│       └── security/
-│           └── ZeroTrustFilter.java     # Zero-trust auth filter
+│       │   ├── AuthService.java          # Login, register, password validation
+│       │   │                             #   (BCrypt + legacy SHA-256 + legacy MD5)
+│       │   ├── TokenService.java         # JWT generation (RS256)
+│       │   ├── OidcService.java          # OIDC discovery, JWKS, auth codes
+│       │   ├── MigrationService.java     # Bulk import, dual-write, cutover, rollback
+│       │   └── MigrationDemoService.java # Orchestrates all 5 demo phases
+│       ├── security/
+│       │   └── ZeroTrustFilter.java      # JWT validation, endpoint allowlist
+│       └── config/
+│           ├── SecurityConfig.java       # Spring Security filter chain
+│           └── JwksConfig.java           # RSA key pair for JWT signing
 │
-├── legacy-main-site/               # Python Flask - Simulates Rails Monolith
-│   ├── app.py                      # Port 3001
-│   └── requirements.txt
+├── legacy-main-site/                     # Python Flask (port 3001)
+│   └── app.py                            # SHA-256+salt hashing, OIDC client
 │
-├── legacy-ma-site/                 # Python Flask - Simulates Acquired Site
-│   ├── app.py                      # Port 3002
-│   └── requirements.txt
+├── legacy-ma-site/                       # Python Flask (port 3002)
+│   └── app.py                            # MD5 hashing, OIDC client
 │
-├── migration/                      # Migration phase scripts
-│   ├── phase0_bulk_import.py       # Import users from legacy sites
-│   ├── phase1_shadow_mode.py       # Validate without enforcing
-│   ├── phase2_dual_write.py        # Sync both databases
-│   ├── phase3_cutover.py           # Flip to ID Platform + SSO
-│   ├── phase4_rollback.py          # Safely revert to legacy
-│   └── requirements.txt
+├── Dockerfile.id-platform                # Multi-stage: Maven build → JRE
+├── Dockerfile.legacy-main-site           # Python 3.11 slim
+├── Dockerfile.legacy-ma-site             # Python 3.11 slim
+├── docker-compose.yml                    # 3 services with healthchecks
+├── deploy/
+│   ├── docker-deploy.sh                  # VM setup script (Docker + compose)
+│   └── deploy.bat                        # Windows deploy helper
 │
-├── scripts/
-│   └── demo.py                     # Full demo walkthrough
-│
-├── architecture/
-│   ├── current-state.drawio        # Before migration
-│   ├── intermediate-state.drawio   # During migration
-│   └── final-state.drawio          # After migration
+├── migration/                            # Standalone Python migration scripts
+│   ├── phase0_bulk_import.py             #   (alternative to the Java demo)
+│   ├── phase1_shadow_mode.py
+│   ├── phase2_dual_write.py
+│   ├── phase3_cutover.py
+│   └── phase4_rollback.py
 │
 └── README.md
 ```
 
 ---
 
-## Quick Start
+## Quick Start (Docker)
 
 ### Prerequisites
-- Java 17+
-- Maven 3.6+
-- Python 3.8+
-- pip
+- Docker + Docker Compose
 
-### Step 1: Install Dependencies
+### Deploy
 
 ```bash
-# Legacy sites
-cd legacy-main-site
-pip install -r requirements.txt
-cd ../legacy-ma-site
-pip install -r requirements.txt
-cd ..
-
-# Migration scripts
-cd migration
-pip install -r requirements.txt
-cd ..
+# Clone and start all 3 services
+git clone <repo-url>
+cd raksul-id-platform-demo
+VM_IP=<your-vm-ip> docker compose up -d --build
 ```
 
-### Step 2: Start All Services
+Services:
+- **ID Platform:** `http://localhost:3000`
+- **Main Site:** `http://localhost:3001`
+- **MA Site:** `http://localhost:3002`
 
-Open **3 terminals**:
+### Run Full Demo
 
+Open `http://localhost:3000` in your browser → click **Run Full Demo** → watch all 5 phases stream live via SSE.
+
+Or via API:
 ```bash
-# Terminal 1: Legacy Main Site
-cd legacy-main-site
-python app.py
-# Running on http://localhost:3001
-
-# Terminal 2: Legacy MA Site
-cd legacy-ma-site
-python app.py
-# Running on http://localhost:3002
-
-# Terminal 3: ID Platform
-cd id-platform
-mvn spring-boot:run
-# Running on http://localhost:3000
+curl -X POST http://localhost:3000/api/migration/run-demo \
+  -H "Content-Type: application/json"
 ```
 
-### Step 3: Run the Demo
+### Deploy to VM
 
 ```bash
-# Terminal 4: Run full demo
-cd migration
-python ../scripts/demo.py
+# Upload project files to VM
+scp -r . opc@<vm-ip>:/opt/raksul-id-platform/
+
+# SSH and run setup
+ssh opc@<vm-ip>
+cd /opt/raksul-id-platform
+bash deploy/docker-deploy.sh
 ```
 
 ---
 
-## Migration Phases
+## Migration Strategy: 5 Phases
 
-### Phase 0: Bulk Import
-- Fetch all users from both legacy sites
-- Resolve conflicts (same email on both sites)
-- Insert into ID Platform's unified database
-- **No user-facing changes**
+### Phase 0 — Bulk Import
+**No user-facing changes.** Fetches all users from both legacy sites and imports them into the ID Platform.
 
-### Phase 1: Shadow Mode
-- Both sites still use own auth for login
-- After each login, ID Platform validates credentials in background
-- Results logged and compared for discrepancies
-- **No user impact**
+- Resolves email conflicts (same email on both sites → flagged for manual resolution)
+- Preserves legacy password hashes (BCrypt, SHA-256+salt, or MD5)
+- Tracks source site per user (`main_site`, `ma_site`, `merged`)
 
-### Phase 2: Dual-Write
-- Legacy sites write to both own DB and ID Platform
+### Phase 1 — Shadow Mode
+**No user impact.** Validates credentials against the ID Platform in the background while legacy auth remains active.
+
+- Compares legacy auth result with ID Platform auth result per user
+- Reports matches/mismatches — mismatches indicate hash incompatibility
+- Can run for days/weeks in production to build confidence
+
+### Phase 2 — Dual-Write
+**Users see no difference.** New registrations and profile updates write to both legacy DB and ID Platform simultaneously.
+
+- New user on Main Site → dual-written to ID Platform
+- New user on MA Site → dual-written to ID Platform
+- Profile updates propagated to ID Platform
 - Both databases stay in sync
-- New registrations, profile updates propagate to ID Platform
-- **Users see no difference**
 
-### Phase 3: Cutover
-- MA Site flipped first (smaller, lower risk)
-- Main Site flipped second (more cautious)
-- SSO enabled: Login on Main → Access MA without re-login
-- Legacy DBs kept as fallback
+### Phase 3 — Cutover + SSO
+**Auth switches to ID Platform.** MA Site cutover first (smaller, lower risk), then Main Site.
 
-### Phase 4: Rollback
-- Simulate post-cutover issues
-- Rollback Main Site to legacy auth
-- Reverse-sync password changes to legacy DB
-- Users can still login (seamless)
-- **Zero data loss**
+- Legacy sites check `migration/status` API to determine auth mode
+- After cutover, all auth goes through ID Platform OIDC flow
+- **SSO enabled:** login on Main Site → access MA Site without re-login
+- IDP session cookie enables silent re-authentication (`prompt=none`)
+
+### Phase 4 — Rollback
+**Emergency revert.** Both sites switch back to legacy auth.
+
+- Auth routing reverts to local password validation
+- Password changes made during ID Platform phase are reverse-synced
+- Users can still log in — zero data loss
+- Dual-write data preserved in ID Platform for future re-attempt
+
+---
+
+## Real-World Problems Solved
+
+### 1. Different Password Hash Formats
+The ID Platform validates passwords against **three hash formats** during migration:
+
+| Source | Algorithm | ID Platform Support |
+|---|---|---|
+| ID Platform (native) | BCrypt | Native |
+| Main Site (legacy) | SHA-256 + salt | Supported |
+| MA Site (legacy) | Plain MD5 | Supported |
+
+On first successful login after cutover, legacy hashes are **lazily upgraded to BCrypt** — no forced password reset.
+
+### 2. M&A Email Conflicts
+When the same email exists on both sites:
+- Same password → accounts are **merged** (linked as `MERGED` source)
+- Different passwords → flagged as **conflict** for manual resolution
+- Different emails → both imported independently
+
+### 3. NOT NULL Constraints
+ID Platform requires `passwordHash` for all users. During dual-write, new users must include a password hash even if only updating profile data — the dual-write payload encodes the password as Base64.
+
+### 4. SQLite Connection Leaks (Legacy Sites)
+Legacy Flask apps use SQLite, which holds a write lock per connection. The register endpoint initially leaked connections on errors, causing `database is locked` under concurrent requests. Fixed with `try/finally` blocks and `timeout=30`.
 
 ---
 
 ## API Reference
 
-### OIDC Endpoints (ID Platform)
+### OIDC Endpoints
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/.well-known/openid-configuration` | OIDC discovery document |
-| GET | `/jwks.json` | Public keys for token verification |
-| POST | `/oauth2/authorize` | Authorization endpoint |
-| POST | `/oauth2/token` | Token endpoint (password, refresh_token grants) |
-| GET | `/oauth2/userinfo` | User profile from valid token |
+| GET | `/jwks.json` | Public RSA keys for token verification |
+| GET | `/oauth2/authorize` | Authorization endpoint (shows login page) |
+| POST | `/oauth2/authorize` | Authenticate and issue authorization code |
+| POST | `/oauth2/token` | Token exchange (authorization_code, refresh_token) |
+| GET | `/oauth2/userinfo` | User profile from valid Bearer token |
 | POST | `/oauth2/revoke` | Token revocation |
+| POST | `/oauth2/register` | Dynamic client registration |
+| GET | `/oauth2/clients` | List registered OIDC clients |
 
 ### Auth Endpoints
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/auth/register` | Register new user |
-| POST | `/api/auth/login` | Login (returns JWT tokens) |
-| GET | `/api/users/me` | Get current user profile |
-| PUT | `/api/users/me` | Update profile |
+| POST | `/api/auth/register` | Register new user (BCrypt-hashed) |
+| POST | `/api/auth/login` | Login → returns JWT access + refresh tokens |
+| GET | `/api/users/me` | Current user profile (requires Bearer token) |
+| PUT | `/api/users/me` | Update display name / email |
 | DELETE | `/api/users/me` | Deactivate account |
 
 ### Migration Endpoints
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/migration/import?site={name}` | Bulk import users |
-| POST | `/api/migration/shadow-validate` | Shadow mode validation |
-| POST | `/api/migration/dual-write?site={name}` | Dual-write a user |
-| POST | `/api/migration/cutover?site={name}` | Cutover site to ID Platform |
-| POST | `/api/migration/rollback?site={name}` | Rollback to legacy auth |
-| GET | `/api/migration/status` | Migration progress |
+| POST | `/api/migration/import?site={name}` | Bulk import users from legacy site |
+| POST | `/api/migration/shadow-validate` | Validate credentials in shadow mode |
+| POST | `/api/migration/dual-write?site={name}` | Write user to ID Platform (dual-write) |
+| POST | `/api/migration/cutover?site={name}` | Cutover site to ID Platform auth |
+| POST | `/api/migration/rollback?site={name}` | Rollback site to legacy auth |
+| GET | `/api/migration/status` | Current migration status per site |
+| POST | `/api/migration/run-demo` | **Run full 5-phase demo (SSE stream)** |
+
+### System Endpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Dashboard UI with migration visualization |
+| GET | `/api/health` | Health check |
+| GET | `/api/info` | Service info + registered clients |
+| GET | `/h2-console` | H2 database console (dev only) |
 
 ---
 
-## Key Design Decisions
+## OIDC Flow
 
-### 1. No Forced Password Resets
-Users' existing credentials are imported into ID Platform. On first login after cutover, their password hash is validated against the imported hash. No re-registration needed.
+```
+Legacy Site                    ID Platform                  User
+     │                              │                        │
+     │  1. /oauth2/authorize        │                        │
+     │  (client_id, redirect_uri,   │                        │
+     │   scope=openid, PKCE)        │                        │
+     ├─────────────────────────────>│                        │
+     │                              │   2. Login Page        │
+     │                              │<───────────────────────│
+     │                              │   3. email + password  │
+     │                              │<───────────────────────│
+     │                              │   4. Authorization     │
+     │                              │      Code + state      │
+     │  5. ?code=...&state=...      │───────────────────────>
+     │<─────────────────────────────│                        │
+     │  6. /oauth2/token            │                        │
+     │  (code + code_verifier)      │                        │
+     ├─────────────────────────────>│                        │
+     │  7. access_token + id_token  │                        │
+     │<─────────────────────────────│                        │
+     │  8. /oauth2/userinfo         │                        │
+     │  (Bearer token)              │                        │
+     ├─────────────────────────────>│                        │
+     │  9. { sub, email, name }    │                        │
+     │<─────────────────────────────│                        │
+```
 
-### 2. Zero Downtime Migration
-Phased approach: Shadow → Dual-Write → Cutover. Each phase can run for days/weeks. Cutover is a simple config flip, not a data migration.
+- **PKCE required** (S256) — prevents authorization code interception
+- **RS256 signed** — asymmetric key pairs, legacy sites verify via JWKS
+- **Session cookie** — enables SSO across both legacy sites (`prompt=none` silent auth)
 
-### 3. Safe Rollback
-Dual-write ensures old DB always has latest data. Rollback flips auth routing back to legacy. Reverse-sync handles password changes made during ID Platform phase.
+---
 
-### 4. M&A Conflict Resolution
-| Scenario | Resolution |
-|----------|-----------|
-| Same email, same password hash | Merge into one account |
-| Same email, different password | Flag for manual resolution |
-| Different emails | Keep both, link under profile |
+## Tech Stack
 
-### 5. Zero-Trust Security
-- Every request must carry a valid JWT
-- Tokens signed with RSA-256 (asymmetric)
-- No implicit trust between services
-- Token revocation supported
-- Rate limiting per user/IP
+| Layer | Technology |
+|-------|-----------|
+| ID Platform | Java 17, Spring Boot 3, Spring Security, JPA |
+| Auth | OIDC (code flow + PKCE), JWT (RS256), BCrypt |
+| Legacy Sites | Python 3, Flask, SQLite |
+| Database (demo) | H2 (file-based) |
+| Database (prod) | Aurora MySQL |
+| Containerization | Docker, Docker Compose |
+| Deployment | Oracle Linux 9.6 VM |
 
 ---
 
@@ -239,46 +314,14 @@ Dual-write ensures old DB always has latest data. Rollback flips auth routing ba
 | Aspect | Demo | Production |
 |--------|------|-----------|
 | Database | H2 (file-based) | Aurora MySQL with read replicas |
-| Token Cache | None | Redis for fast validation |
-| Rate Limiting | None | AWS WAF + custom limiter |
-| Monitoring | Logs | Datadog, CloudWatch |
-| Deployment | Local | AWS ECS with rolling deploys |
+| Token Cache | JWT stateless | Redis for revocation checking |
+| Rate Limiting | None | AWS WAF + application-level limiter |
+| Monitoring | Logs only | Datadog, CloudWatch |
+| Deployment | Docker Compose | AWS ECS with rolling deploys |
 | CI/CD | Manual | GitHub Actions + CodePipeline |
-| Load Balancing | None | ALB with health checks |
-| Secrets | Config file | AWS Secrets Manager |
+| Load Balancing | Direct | ALB with health checks |
+| Secrets | Environment variables | AWS Secrets Manager |
+| TLS | HTTP (demo) | HTTPS via CloudFront + ACM |
 
 ---
 
-## Architecture Diagrams
-
-Open the `.drawio` files in `architecture/` folder using [draw.io](https://app.diagrams.net) or VS Code with Draw.io extension.
-
-- **current-state.drawio**: Two independent auth systems (before migration)
-- **intermediate-state.drawio**: During migration with dual-write
-- **final-state.drawio**: Unified ID Platform with SSO (after migration)
-
----
-
-## Interview Discussion Points
-
-### Technical Deep Dives
-1. Why OIDC over custom JWT? (Standards, interoperability, tooling)
-2. How does zero-trust work in practice? (Every request validated, no implicit trust)
-3. What happens during a network partition between sites?
-4. How do you handle token expiry during long-running operations?
-
-### Migration Strategy
-1. Why start with MA site (smaller)? (Lower risk, faster feedback)
-2. How long should shadow mode run? (Depends on traffic, typically 1-2 weeks)
-3. What metrics indicate readiness for cutover?
-4. How do you handle users who change passwords during migration?
-
-### Scale Considerations
-1. How does this work with 3M+ users? (Connection pooling, read replicas, caching)
-2. What's the latency impact of OIDC validation? (JWT is stateless, <1ms with cache)
-3. How do you handle geographic distribution? (Multi-region Aurora, CloudFront)
-
-### Incident Response
-1. What's your rollback SLA? (<5 minutes via feature flag)
-2. How do you detect auth degradation? (Failure rate, latency percentiles)
-3. What's the blast radius of an ID Platform outage? (All sites affected, mitigation: legacy fallback)
