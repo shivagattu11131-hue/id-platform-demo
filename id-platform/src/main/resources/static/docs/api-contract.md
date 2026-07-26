@@ -321,12 +321,16 @@ data: {"phase":"DONE","status":"completed","message":"Migration complete!"}
 
 ## 8. Client Registration
 
+Dynamic Client Registration follows the RFC 7591-style onboarding flow implemented in the dashboard. New services can register themselves without restarting the ID Platform, receive a `client_id` and `client_secret`, and then use the standard OIDC Authorization Code flow with PKCE.
+
 ### POST `/oauth2/register`
+
+**Purpose:** Register a new OIDC client dynamically without restarting the ID Platform
 
 ```json
 {
-  "client_id": "new-service",
-  "client_name": "New Service",
+  "client_id": "my-new-service",
+  "client_name": "My New Service",
   "redirect_uris": "http://localhost:4000/callback",
   "scope": "openid profile email"
 }
@@ -336,9 +340,9 @@ data: {"phase":"DONE","status":"completed","message":"Migration complete!"}
 
 ```json
 {
-  "client_id": "new-service",
+  "client_id": "my-new-service",
   "client_secret": "auto-generated-uuid",
-  "client_name": "New Service",
+  "client_name": "My New Service",
   "redirect_uris": ["http://localhost:4000/callback"],
   "scope": "openid profile email",
   "token_endpoint_auth_method": "client_secret_post",
@@ -346,6 +350,8 @@ data: {"phase":"DONE","status":"completed","message":"Migration complete!"}
   "response_types": ["code"]
 }
 ```
+
+**Note:** Save the returned `client_secret` immediately. In the dashboard flow it is shown only once, and the service should persist it in its own secure configuration.
 
 ### GET `/oauth2/clients`
 
@@ -361,6 +367,14 @@ data: {"phase":"DONE","status":"completed","message":"Migration complete!"}
   }
 ]
 ```
+
+### New service onboarding
+
+1. Register the service in the dashboard or via `POST /oauth2/register`.
+2. Store the returned `client_id` and `client_secret` in the service's OIDC library or secret store.
+3. Configure discovery with `http://localhost:3000/.well-known/openid-configuration`.
+4. Implement the Authorization Code flow with PKCE in the service.
+5. After onboarding, users can authenticate once and access other registered services through the shared SSO session.
 
 ---
 

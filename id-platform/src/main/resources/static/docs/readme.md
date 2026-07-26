@@ -55,19 +55,19 @@ A working demonstration of migrating two independent legacy authentication syste
 
 Two independent auth systems with no connection between them.
 
-![Current State](/architecture/current-state.svg)
+![Current State](/architecture/current-state.png)
 
 ### Intermediate state
 
 Both legacy sites still handle auth. The ID platform is populated and validated in the background.
 
-![Intermediate State](/architecture/intermediate-state.svg)
+![Intermediate State](/architecture/intermediate-state.png)
 
 ### Final state
 
 Unified ID platform with OIDC federation and SSO across both sites.
 
-![Final State](/architecture/final-state.svg)
+![Final State](/architecture/final-state.png)
 
 ## Migration strategy
 
@@ -135,6 +135,27 @@ When the same email exists on both sites:
 ### SSO model
 
 The legacy sites integrate with the ID platform using OIDC Authorization Code Flow with PKCE. Tokens are signed with RS256 and can be verified through JWKS.
+
+### Dynamic client registration
+
+The demo also implements Dynamic Client Registration (RFC 7591), so a new service can register as an OIDC client without restarting the ID platform.
+
+You can register a new service from the dashboard or by calling `POST /oauth2/register` with:
+
+- `client_id` — unique client identifier, for example `my-new-service`
+- `client_name` — display name, for example `My New Service`
+- `redirect_uris` — space-separated callback URLs, for example `http://localhost:4000/callback`
+- `scope` — requested scopes, for example `openid profile email`
+
+The registration response returns `client_id` and `client_secret`. Save the `client_secret` immediately, because the dashboard shows it only once.
+
+### How to onboard a new service
+
+1. Register the service in the dashboard or via `POST /oauth2/register`.
+2. Store the returned `client_id` and `client_secret` in the service's OIDC configuration.
+3. Point the service to the discovery endpoint: `http://localhost:3000/.well-known/openid-configuration`.
+4. Implement the OIDC Authorization Code Flow with PKCE in the service.
+5. After registration, users can log in once on any participating service and access other registered services through SSO.
 
 ## Main endpoints
 

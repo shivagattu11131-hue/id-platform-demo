@@ -40,7 +40,7 @@ In the final state:
 - the main site and MA site trust ID platform-issued tokens
 - SSO is enabled through the shared ID platform session
 - profile changes are handled centrally
-- future services can be onboarded by registering as additional OIDC clients
+- future services can be onboarded by registering as additional OIDC clients through `POST /oauth2/register`, without restarting the platform
 
 ### Intermediate architecture
 
@@ -129,6 +129,7 @@ The ID platform needs to provide these functions:
 - user profile management
 - token issuance and validation
 - OIDC discovery, authorization, token, and userinfo endpoints
+- dynamic OIDC client registration for onboarding additional services
 - SSO session handling
 - migration status control for phased rollout
 - import, validation, and reconciliation support
