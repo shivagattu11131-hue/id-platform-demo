@@ -534,7 +534,6 @@ LOGGED_IN_PAGE = """
                 {% endif %}
             </div>
 
-            {% if not oidc_enabled %}
             <div class="profile-form">
                 <h3>Profile Update</h3>
                 <form action="/api/users/me" method="post" id="profile-form">
@@ -550,7 +549,6 @@ LOGGED_IN_PAGE = """
                 </form>
             </div>
             <br>
-            {% endif %}
 
             {% if oidc_enabled %}
             <p>You are logged in via the unified ID Platform. You can now access MA Site without re-login.</p>
