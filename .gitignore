@@ -32,3 +32,4 @@ venv/
 Thumbs.db
 
 .id-platform/target/
+*.class

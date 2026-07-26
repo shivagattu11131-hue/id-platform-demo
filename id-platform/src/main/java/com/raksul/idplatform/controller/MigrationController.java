@@ -4,6 +4,7 @@ import com.raksul.idplatform.model.LegacyUser;
 import com.raksul.idplatform.model.MigrationResult;
 import com.raksul.idplatform.model.ShadowValidationResult;
 import com.raksul.idplatform.service.MigrationService;
+import com.raksul.idplatform.service.MigrationDemoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +19,9 @@ public class MigrationController {
 
     @Autowired
     private MigrationService migrationService;
+
+    @Autowired
+    private MigrationDemoService migrationDemoService;
 
     @PostMapping("/import")
     public ResponseEntity<MigrationResult> importUsers(
@@ -54,6 +58,12 @@ public class MigrationController {
     @PostMapping("/rollback")
     public ResponseEntity<Map<String, Object>> rollback(@RequestParam String site) {
         Map<String, Object> result = migrationService.rollback(site);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/run-demo")
+    public ResponseEntity<Map<String, Object>> runDemo() {
+        Map<String, Object> result = migrationDemoService.runFullDemo();
         return ResponseEntity.ok(result);
     }
 }

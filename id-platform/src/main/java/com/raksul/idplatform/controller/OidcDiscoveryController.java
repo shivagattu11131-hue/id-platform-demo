@@ -158,6 +158,7 @@ th { color: #64748b; font-weight: 600; }
     <a href="#" data-tab="login">Login</a>
     <a href="#" data-tab="profile">Profile</a>
     <div class="group">Migration</div>
+    <a href="#" data-tab="mig-demo" style="color:#38bdf8;font-weight:600">Run Demo</a>
     <a href="#" data-tab="mig-status">Status</a>
     <a href="#" data-tab="mig-import">Import</a>
     <a href="#" data-tab="mig-cutover">Cutover</a>
@@ -303,6 +304,26 @@ th { color: #64748b; font-weight: 600; }
         <p style="color:#64748b;font-size:13px;margin-bottom:12px">DELETE /api/auth/me</p>
         <button class="btn btn-red" onclick="callDeleteAuth('/api/auth/me','del-out')">Delete Account</button>
         <div class="output" id="del-out">Warning: This will deactivate the account...</div>
+    </div>
+</div>
+
+<div class="section" id="mig-demo">
+    <div class="card">
+        <h2>Migration Demo - Full Walkthrough</h2>
+        <p style="color:#94a3b8;font-size:13px;margin-bottom:16px">Runs all 5 migration phases end-to-end: Bulk Import &rarr; Shadow Mode &rarr; Dual-Write &rarr; Cutover + SSO &rarr; Rollback</p>
+        <div style="background:#1e3a5f;border:1px solid #38bdf8;border-radius:8px;padding:16px;margin-bottom:16px">
+            <p style="color:#38bdf8;font-weight:600;margin-bottom:8px">What this demo shows:</p>
+            <p style="color:#94a3b8;font-size:13px;line-height:1.8">
+                Phase 0: Seed legacy sites with sample users (including conflicts) and bulk-import to ID Platform<br>
+                Phase 1: Shadow validation - compare legacy vs ID Platform auth results<br>
+                Phase 2: Dual-write - new registrations and profile updates sync to both databases<br>
+                Phase 3: Cutover - flip to OIDC auth + demonstrate Single Sign-On (SSO)<br>
+                Phase 4: Rollback - safely revert to legacy authentication
+            </p>
+        </div>
+        <button class="btn btn-green" id="run-demo-btn" onclick="runFullDemo()" style="font-size:15px;padding:12px 24px">Run Full Demo</button>
+        <button class="btn btn-blue" onclick="document.getElementById('demo-progress').innerHTML=''" style="font-size:15px;padding:12px 24px">Clear</button>
+        <div id="demo-progress" style="margin-top:16px"></div>
     </div>
 </div>
 
@@ -636,6 +657,72 @@ async function doRegisterClient() {
     await callPost('/oauth2/register', body, 'creg-out');
     loadOverview();
     loadClientTable();
+}
+
+async function runFullDemo() {
+    const btn = document.getElementById('run-demo-btn');
+    const progress = document.getElementById('demo-progress');
+    btn.disabled = true;
+    btn.textContent = 'Running...';
+    progress.innerHTML = '<div style="color:#fbbf24;font-size:14px">Executing migration phases...</div>';
+
+    try {
+        const resp = await fetch('/api/migration/run-demo', { method: 'POST' });
+        const result = await resp.json();
+        renderDemoResult(result);
+    } catch(e) {
+        progress.innerHTML = '<div style="color:#f87171">Error: ' + e.message + '</div>';
+    }
+    btn.disabled = false;
+    btn.textContent = 'Run Full Demo';
+}
+
+function renderDemoResult(result) {
+    const progress = document.getElementById('demo-progress');
+    let html = '';
+
+    const phaseColors = { 0: '#38bdf8', 1: '#a78bfa', 2: '#fbbf24', 3: '#34d399', 4: '#f87171' };
+    const phaseIcons = { 0: '0', 1: '1', 2: '2', 3: '3', 4: '4' };
+
+    if (result.phases) {
+        result.phases.forEach(phase => {
+            const color = phaseColors[phase.phase] || '#94a3b8';
+            const icon = phaseIcons[phase.phase] || '?';
+            const statusBadge = phase.success ?
+                '<span class="badge badge-green">SUCCESS</span>' :
+                '<span class="badge badge-red">FAILED</span>';
+
+            html += '<div class="card" style="margin-bottom:12px;border-left:3px solid ' + color + '">';
+            html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
+            html += '<span style="background:' + color + ';color:#0f172a;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">' + icon + '</span>';
+            html += '<h3 style="color:' + color + ';margin:0">Phase ' + phase.phase + ': ' + phase.name + '</h3>';
+            html += statusBadge;
+            html += '<span style="color:#64748b;font-size:12px;margin-left:auto">' + phase.durationMs + 'ms</span>';
+            html += '</div>';
+            html += '<p style="color:#94a3b8;font-size:13px;margin-bottom:8px">' + phase.message + '</p>';
+
+            if (phase.steps) {
+                html += '<table style="font-size:12px">';
+                html += '<thead><tr><th>Step</th><th>Type</th><th>Result</th></tr></thead><tbody>';
+                phase.steps.forEach(step => {
+                    const stepBadge = step.success ?
+                        '<span class="badge badge-green">OK</span>' :
+                        '<span class="badge badge-red">FAIL</span>';
+                    const detail = step.detail ? ' <span style="color:#64748b">(' + step.detail + ')</span>' : '';
+                    html += '<tr><td>' + step.step + detail + '</td><td><code>' + step.type + '</code></td><td>' + stepBadge + '</td></tr>';
+                });
+                html += '</tbody></table>';
+            }
+            html += '</div>';
+        });
+
+        html += '<div class="card" style="border-left:3px solid #22c55e">';
+        html += '<h3 style="color:#22c55e">Demo Complete</h3>';
+        html += '<p style="color:#94a3b8;font-size:13px">Total duration: ' + result.durationMs + 'ms | Phases: ' + result.totalPhases + '</p>';
+        html += '</div>';
+    }
+
+    progress.innerHTML = html;
 }
 
 async function loadClientTable() {
