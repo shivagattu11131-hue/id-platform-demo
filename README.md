@@ -98,8 +98,44 @@ raksul-id-platform-demo/
 │   ├── phase3_cutover.py
 │   └── phase4_rollback.py
 │
+├── architecture/                         # Architecture diagrams
+│   ├── current-state.drawio              #   Editable source
+│   ├── current-state.svg                 #   GitHub-viewable
+│   ├── current-state.png                 #   Downloadable
+│   ├── intermediate-state.drawio
+│   ├── intermediate-state.svg
+│   ├── intermediate-state.png
+│   ├── final-state.drawio
+│   ├── final-state.svg
+│   └── final-state.png
+│
 └── README.md
 ```
+
+---
+
+## Architecture Diagrams
+
+### Current State — Before Migration
+Two independent auth systems with no connection between them.
+
+![Current State](architecture/current-state.svg)
+
+> Edit source: [current-state.drawio](architecture/current-state.drawio)
+
+### Intermediate State — During Migration (Phases 0-2)
+Both legacy sites still handle auth. ID Platform is populated and validated in the background.
+
+![Intermediate State](architecture/intermediate-state.svg)
+
+> Edit source: [intermediate-state.drawio](architecture/intermediate-state.drawio)
+
+### Final State — After Cutover (Phase 3)
+Unified ID Platform with OIDC federation and SSO across both sites.
+
+![Final State](architecture/final-state.svg)
+
+> Edit source: [final-state.drawio](architecture/final-state.drawio)
 
 ---
 
