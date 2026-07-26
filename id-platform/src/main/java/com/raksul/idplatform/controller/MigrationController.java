@@ -67,6 +67,12 @@ public class MigrationController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping("/run-phase/{phase}")
+    public ResponseEntity<Map<String, Object>> runPhase(@PathVariable int phase) {
+        Map<String, Object> result = migrationDemoService.runPhase(phase);
+        return ResponseEntity.ok(result);
+    }
+
     @PostMapping(value = "/run-demo", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter runDemo() {
         SseEmitter emitter = new SseEmitter(300000L);

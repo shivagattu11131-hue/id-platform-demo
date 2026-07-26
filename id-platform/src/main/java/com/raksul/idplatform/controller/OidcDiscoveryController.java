@@ -322,6 +322,7 @@ th { color: #64748b; font-weight: 600; }
             </p>
         </div>
         <button class="btn btn-green" id="run-demo-btn" onclick="runFullDemo()" style="font-size:15px;padding:12px 24px">Run Full Demo</button>
+        <button class="btn btn-purple" id="run-phases-btn" onclick="startPhasedDemo()" style="font-size:15px;padding:12px 24px;background:#7c3aed">Run in Phases</button>
         <button class="btn btn-blue" onclick="document.getElementById('demo-progress').innerHTML=''" style="font-size:15px;padding:12px 24px">Clear</button>
         <div id="demo-progress" style="margin-top:16px;max-height:70vh;overflow-y:auto"></div>
     </div>
@@ -704,6 +705,57 @@ async function runFullDemo() {
     }
     btn.disabled = false;
     btn.textContent = 'Run Full Demo';
+}
+
+const PHASE_NAMES = ['Bulk Import', 'Shadow Mode', 'Dual-Write', 'Cutover + SSO', 'Rollback'];
+
+async function startPhasedDemo() {
+    const btn = document.getElementById('run-phases-btn');
+    const progress = document.getElementById('demo-progress');
+    btn.disabled = true;
+    btn.textContent = 'Running...';
+    progress.innerHTML = '<div style="color:#7c3aed;font-weight:600;font-size:15px;margin-bottom:12px">Run in Phases</div><div style="color:#94a3b8;font-size:13px;margin-bottom:16px">Click <b>Continue</b> after each phase to proceed to the next.</div><div id="phased-phases"></div><div id="phased-continue"></div>';
+    const phasesDiv = document.getElementById('phased-phases');
+    const continueDiv = document.getElementById('phased-continue');
+
+    for (let i = 0; i <= 4; i++) {
+        continueDiv.innerHTML = '<div style="margin-top:12px"><button class="btn btn-green" id="continue-btn" onclick="runPhaseStep(' + i + ')" style="font-size:14px;padding:10px 20px">Run Phase ' + i + ': ' + PHASE_NAMES[i] + '</button></div>';
+        document.getElementById('continue-btn').focus();
+        await new Promise(resolve => {
+            window._phasedResolve = resolve;
+        });
+        continueDiv.innerHTML = '';
+
+        try {
+            const resp = await fetch('/api/migration/run-phase/' + i, { method: 'POST' });
+            const data = await resp.json();
+            phasesDiv.innerHTML += '<div id="phased-phase-' + i + '"></div>';
+            renderPhaseCard(document.getElementById('phased-phase-' + i), data);
+
+            phasesDiv.scrollTop = phasesDiv.scrollHeight;
+
+            if (i < 4) {
+                const nextColor = PHASE_COLORS[i + 1] || '#94a3b8';
+                continueDiv.innerHTML = '<div style="margin-top:12px;display:flex;align-items:center;gap:12px"><div style="color:#94a3b8;font-size:13px">Phase ' + i + ' complete. Ready for Phase ' + (i + 1) + ': ' + PHASE_NAMES[i + 1] + '</div><button class="btn btn-green" id="continue-btn" onclick="window._phasedResolve()" style="font-size:14px;padding:10px 20px;background:#7c3aed">Continue to Phase ' + (i + 1) + ' &rarr;</button></div>';
+                document.getElementById('continue-btn').focus();
+                await new Promise(resolve => {
+                    window._phasedResolve = resolve;
+                });
+                continueDiv.innerHTML = '';
+            } else {
+                continueDiv.innerHTML = '<div style="margin-top:16px;padding:12px 16px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:8px;color:#34d399;font-size:14px;font-weight:600">All 5 phases completed successfully. Migration demo finished.</div>';
+            }
+        } catch(e) {
+            phasesDiv.innerHTML += '<div style="color:#f87171;margin-top:8px">Phase ' + i + ' error: ' + e.message + '</div>';
+            break;
+        }
+    }
+    btn.disabled = false;
+    btn.textContent = 'Run in Phases';
+}
+
+function runPhaseStep(phase) {
+    if (window._phasedResolve) window._phasedResolve();
 }
 
 function renderPhaseCard(progress, phase) {

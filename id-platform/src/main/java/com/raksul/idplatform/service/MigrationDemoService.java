@@ -60,6 +60,23 @@ public class MigrationDemoService {
         try { onPhase.accept(runPhase4()); } catch (Exception e) { log.error("Phase 4 failed", e); }
     }
 
+    public Map<String, Object> runPhase(int phase) {
+        return switch (phase) {
+            case 0 -> runPhase0();
+            case 1 -> runPhase1();
+            case 2 -> runPhase2();
+            case 3 -> runPhase3();
+            case 4 -> runPhase4();
+            default -> {
+                Map<String, Object> error = new LinkedHashMap<>();
+                error.put("phase", phase);
+                error.put("success", false);
+                error.put("message", "Unknown phase: " + phase);
+                yield error;
+            }
+        };
+    }
+
     private Map<String, Object> runPhase0() {
         Map<String, Object> phase = new LinkedHashMap<>();
         phase.put("phase", 0);
