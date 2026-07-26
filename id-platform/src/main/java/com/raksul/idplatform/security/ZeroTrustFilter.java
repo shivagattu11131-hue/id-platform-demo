@@ -116,6 +116,8 @@ public class ZeroTrustFilter extends OncePerRequestFilter {
                path.equals("/api/migration/run-demo") ||
                path.startsWith("/api/migration/run-phase") ||
                path.startsWith("/api/migration/dual-write") ||
+               path.equals("/api/migration/set-custom-data") ||
+               path.equals("/api/migration/clear-custom-data") ||
                path.startsWith("/h2-console") ||
                path.startsWith("/error") ||
                path.startsWith("/css/") ||

@@ -324,6 +324,22 @@ th { color: #64748b; font-weight: 600; }
         <button class="btn btn-green" id="run-demo-btn" onclick="runFullDemo()" style="font-size:15px;padding:12px 24px">Run Full Demo</button>
         <button class="btn btn-purple" id="run-phases-btn" onclick="startPhasedDemo()" style="font-size:15px;padding:12px 24px;background:#7c3aed">Run in Phases</button>
         <button class="btn btn-blue" onclick="document.getElementById('demo-progress').innerHTML=''" style="font-size:15px;padding:12px 24px">Clear</button>
+        <div id="file-upload-section" style="display:none;margin-top:16px;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px">
+            <p style="color:#94a3b8;font-size:13px;margin-bottom:12px"><b style="color:#e2e8f0">Optional:</b> Upload user data files for Phase 0 (JSON arrays). If not provided, sample data is used.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div>
+                    <label style="color:#94a3b8;font-size:12px;display:block;margin-bottom:4px">Main Site Users (JSON)</label>
+                    <input type="file" id="main-data-file" accept=".json,.csv" style="color:#e2e8f0;font-size:13px;width:100%" onchange="previewFile(this,'main-file-info')">
+                    <div id="main-file-info" style="color:#64748b;font-size:11px;margin-top:4px"></div>
+                </div>
+                <div>
+                    <label style="color:#94a3b8;font-size:12px;display:block;margin-bottom:4px">MA Site Users (JSON)</label>
+                    <input type="file" id="ma-data-file" accept=".json,.csv" style="color:#e2e8f0;font-size:13px;width:100%" onchange="previewFile(this,'ma-file-info')">
+                    <div id="ma-file-info" style="color:#64748b;font-size:11px;margin-top:4px"></div>
+                </div>
+            </div>
+            <div style="margin-top:8px;color:#64748b;font-size:11px">Format: JSON array of objects with at least <code>email</code> field. Optional: <code>password</code>, <code>display_name</code>, <code>first_name</code>, <code>last_name</code></div>
+        </div>
         <div id="demo-progress" style="margin-top:16px;max-height:70vh;overflow-y:auto"></div>
     </div>
 </div>
@@ -712,11 +728,35 @@ const PHASE_NAMES = ['Bulk Import', 'Shadow Mode', 'Dual-Write', 'Cutover + SSO'
 async function startPhasedDemo() {
     const btn = document.getElementById('run-phases-btn');
     const progress = document.getElementById('demo-progress');
+    const fileSection = document.getElementById('file-upload-section');
     btn.disabled = true;
     btn.textContent = 'Running...';
-    progress.innerHTML = '<div style="color:#7c3aed;font-weight:600;font-size:15px;margin-bottom:12px">Run in Phases</div><div style="color:#94a3b8;font-size:13px;margin-bottom:16px">Click <b>Continue</b> after each phase to proceed to the next.</div><div id="phased-phases"></div><div id="phased-continue"></div>';
+    fileSection.style.display = 'block';
+    progress.innerHTML = '<div style="color:#7c3aed;font-weight:600;font-size:15px;margin-bottom:12px">Run in Phases</div><div style="color:#94a3b8;font-size:13px;margin-bottom:16px">Upload files below (optional), then click <b>Start</b>. Click <b>Continue</b> after each phase to proceed.</div><div id="phased-phases"></div><div id="phased-continue"></div>';
     const phasesDiv = document.getElementById('phased-phases');
     const continueDiv = document.getElementById('phased-continue');
+
+    let mainData = null, maData = null;
+    continueDiv.innerHTML = '<div style="margin-top:12px"><button class="btn btn-green" id="start-btn" onclick="window._startResolve()" style="font-size:14px;padding:10px 20px">Start</button></div>';
+    document.getElementById('start-btn').focus();
+    await new Promise(resolve => { window._startResolve = resolve; });
+    continueDiv.innerHTML = '';
+
+    const mainFile = document.getElementById('main-data-file').files[0];
+    const maFile = document.getElementById('ma-data-file').files[0];
+    if (mainFile || maFile) {
+        phasesDiv.innerHTML = '<div style="color:#94a3b8;font-size:13px;margin-bottom:8px">Reading files...</div>';
+        try {
+            if (mainFile) { mainData = JSON.parse(await mainFile.text()); }
+            if (maFile) { maData = JSON.parse(await maFile.text()); }
+            phasesDiv.innerHTML = '<div style="color:#34d399;font-size:13px;margin-bottom:8px">Custom data ready: ' + (mainData ? mainData.length + ' main users' : '0 main') + ', ' + (maData ? maData.length + ' ma users' : '0 ma') + '</div>';
+        } catch(e) {
+            phasesDiv.innerHTML = '<div style="color:#f87171;font-size:13px;margin-bottom:8px">File error: ' + e.message + '. Using defaults.</div>';
+            mainData = null; maData = null;
+        }
+    } else {
+        phasesDiv.innerHTML = '<div style="color:#94a3b8;font-size:13px;margin-bottom:8px">No files uploaded. Using sample data.</div>';
+    }
 
     for (let i = 0; i <= 4; i++) {
         continueDiv.innerHTML = '<div style="margin-top:12px"><button class="btn btn-green" id="continue-btn" onclick="runPhaseStep(' + i + ')" style="font-size:14px;padding:10px 20px">Run Phase ' + i + ': ' + PHASE_NAMES[i] + '</button></div>';
@@ -727,7 +767,12 @@ async function startPhasedDemo() {
         continueDiv.innerHTML = '';
 
         try {
-            const resp = await fetch('/api/migration/run-phase/' + i, { method: 'POST' });
+            const fetchOpts = { method: 'POST' };
+            if (i === 0 && (mainData || maData)) {
+                fetchOpts.headers = {'Content-Type': 'application/json'};
+                fetchOpts.body = JSON.stringify({mainUsers: mainData, maUsers: maData});
+            }
+            const resp = await fetch('/api/migration/run-phase/' + i, fetchOpts);
             const data = await resp.json();
             phasesDiv.innerHTML += '<div id="phased-phase-' + i + '"></div>';
             renderPhaseCard(document.getElementById('phased-phase-' + i), data);
@@ -752,6 +797,25 @@ async function startPhasedDemo() {
     }
     btn.disabled = false;
     btn.textContent = 'Run in Phases';
+    fileSection.style.display = 'none';
+    fetch('/api/migration/clear-custom-data', {method: 'POST'});
+}
+
+function previewFile(input, infoId) {
+    const info = document.getElementById(infoId);
+    if (!input.files[0]) { info.textContent = ''; return; }
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!Array.isArray(data)) { info.textContent = 'Error: Expected JSON array'; return; }
+            info.textContent = 'Loaded ' + data.length + ' users from ' + file.name;
+        } catch(err) {
+            info.textContent = 'Error: Invalid JSON - ' + err.message;
+        }
+    };
+    reader.readAsText(file);
 }
 
 function runPhaseStep(phase) {

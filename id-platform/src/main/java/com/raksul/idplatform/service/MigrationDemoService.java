@@ -27,7 +27,21 @@ public class MigrationDemoService {
     @Value("${id-platform.migration.ma-site.url:http://localhost:3002}")
     private String maSiteUrl;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private List<Map<String, Object>> customMainUsers;
+    private List<Map<String, Object>> customMaUsers;
+
+    public void setCustomMainUsers(List<Map<String, Object>> users) { this.customMainUsers = users; }
+    public void setCustomMaUsers(List<Map<String, Object>> users) { this.customMaUsers = users; }
+    public void clearCustomData() { this.customMainUsers = null; this.customMaUsers = null; }
+
+    private final RestTemplate restTemplate;
+
+    public MigrationDemoService() {
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(10000);
+        factory.setReadTimeout(120000);
+        this.restTemplate = new RestTemplate(factory);
+    }
 
     public Map<String, Object> runFullDemo() {
         Map<String, Object> result = new LinkedHashMap<>();
@@ -88,36 +102,47 @@ public class MigrationDemoService {
             // Health checks
             steps.add(step("Health Check", "check", callGet(mainSiteUrl + "/api/health") != null));
 
-            // Seed Main Site users
-            List<Map<String, String>> mainUsers = List.of(
-                Map.of("username", "john_doe", "email", "john@example.com", "password", "password123", "display_name", "John Doe"),
-                Map.of("username", "jane_smith", "email", "jane@example.com", "password", "securepass456", "display_name", "Jane Smith"),
-                Map.of("username", "bob_wilson", "email", "bob@example.com", "password", "bobpass789", "display_name", "Bob Wilson"),
-                Map.of("username", "alice_jones", "email", "alice@example.com", "password", "alicepass", "display_name", "Alice Jones"),
-                Map.of("username", "charlie_brown", "email", "charlie@example.com", "password", "charlie123", "display_name", "Charlie Brown"),
-                Map.of("username", "dual_user_main", "email", "shared@example.com", "password", "mainpass123", "display_name", "Dual User (Main)"),
-                Map.of("username", "conflict_user1", "email", "conflict@example.com", "password", "passA", "display_name", "Conflict User A")
-            );
+            // Determine user data
+            List<Map<String, Object>> mainUsers;
+            List<Map<String, Object>> maUsers;
+
+            if (customMainUsers != null && !customMainUsers.isEmpty()) {
+                mainUsers = customMainUsers;
+            } else {
+                mainUsers = List.of(
+                    Map.of("username", "john_doe", "email", "john@example.com", "password", "password123", "display_name", "John Doe"),
+                    Map.of("username", "jane_smith", "email", "jane@example.com", "password", "securepass456", "display_name", "Jane Smith"),
+                    Map.of("username", "bob_wilson", "email", "bob@example.com", "password", "bobpass789", "display_name", "Bob Wilson"),
+                    Map.of("username", "alice_jones", "email", "alice@example.com", "password", "alicepass", "display_name", "Alice Jones"),
+                    Map.of("username", "charlie_brown", "email", "charlie@example.com", "password", "charlie123", "display_name", "Charlie Brown"),
+                    Map.of("username", "dual_user_main", "email", "shared@example.com", "password", "mainpass123", "display_name", "Dual User (Main)"),
+                    Map.of("username", "conflict_user1", "email", "conflict@example.com", "password", "passA", "display_name", "Conflict User A")
+                );
+            }
+
+            if (customMaUsers != null && !customMaUsers.isEmpty()) {
+                maUsers = customMaUsers;
+            } else {
+                maUsers = List.of(
+                    Map.of("username", "ma_user1", "email", "mauser1@example.com", "password", "mapass1", "display_name", "MA User 1", "company_name", "Acquired Corp A"),
+                    Map.of("username", "ma_user2", "email", "mauser2@example.com", "password", "mapass2", "display_name", "MA User 2", "company_name", "Acquired Corp A"),
+                    Map.of("username", "ma_user3", "email", "mauser3@example.com", "password", "mapass3", "display_name", "MA User 3", "company_name", "Acquired Corp B"),
+                    Map.of("username", "acquired_bob", "email", "bob@example.com", "password", "differentpass", "display_name", "Acquired Bob", "company_name", "Acquired Corp A"),
+                    Map.of("username", "dual_user_ma", "email", "shared@example.com", "password", "mainpass123", "display_name", "Dual User (MA)", "company_name", "Acquired Corp A"),
+                    Map.of("username", "conflict_user2", "email", "conflict@example.com", "password", "passB", "display_name", "Conflict User B", "company_name", "Acquired Corp B")
+                );
+            }
 
             int mainCreated = 0;
-            for (Map<String, String> user : mainUsers) {
+            for (Map<String, Object> user : mainUsers) {
                 Object resp = callPost(mainSiteUrl + "/api/auth/register", user);
                 if (resp != null) mainCreated++;
             }
             steps.add(step("Seed Main Site", "register", true, mainCreated + " users created"));
 
             // Seed MA Site users
-            List<Map<String, String>> maUsers = List.of(
-                Map.of("username", "ma_user1", "email", "mauser1@example.com", "password", "mapass1", "display_name", "MA User 1", "company_name", "Acquired Corp A"),
-                Map.of("username", "ma_user2", "email", "mauser2@example.com", "password", "mapass2", "display_name", "MA User 2", "company_name", "Acquired Corp A"),
-                Map.of("username", "ma_user3", "email", "mauser3@example.com", "password", "mapass3", "display_name", "MA User 3", "company_name", "Acquired Corp B"),
-                Map.of("username", "acquired_bob", "email", "bob@example.com", "password", "differentpass", "display_name", "Acquired Bob", "company_name", "Acquired Corp A"),
-                Map.of("username", "dual_user_ma", "email", "shared@example.com", "password", "mainpass123", "display_name", "Dual User (MA)", "company_name", "Acquired Corp A"),
-                Map.of("username", "conflict_user2", "email", "conflict@example.com", "password", "passB", "display_name", "Conflict User B", "company_name", "Acquired Corp B")
-            );
-
             int maCreated = 0;
-            for (Map<String, String> user : maUsers) {
+            for (Map<String, Object> user : maUsers) {
                 Object resp = callPost(maSiteUrl + "/api/auth/register", user);
                 if (resp != null) maCreated++;
             }
@@ -466,6 +491,9 @@ public class MigrationDemoService {
     private Object callPost(String url, Object body) {
         try {
             return restTemplate.postForObject(url, body, Object.class);
+        } catch (org.springframework.web.client.HttpClientErrorException.Conflict e) {
+            log.debug("POST {} returned 409 (already exists), treating as OK", url);
+            return Map.of("status", "already_exists");
         } catch (Exception e) {
             log.warn("POST {} failed: {}", url, e.getMessage());
             return null;

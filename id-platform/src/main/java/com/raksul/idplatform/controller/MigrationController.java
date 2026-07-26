@@ -68,8 +68,24 @@ public class MigrationController {
     }
 
     @PostMapping("/run-phase/{phase}")
-    public ResponseEntity<Map<String, Object>> runPhase(@PathVariable int phase) {
+    @SuppressWarnings("unchecked")
+    public ResponseEntity<Map<String, Object>> runPhase(
+            @PathVariable int phase,
+            @RequestBody(required = false) Map<String, Object> body) {
+        if (body != null && phase == 0) {
+            Object mainUsersObj = body.get("mainUsers");
+            Object maUsersObj = body.get("maUsers");
+            if (mainUsersObj instanceof List<?> mainList) {
+                migrationDemoService.setCustomMainUsers((List<Map<String, Object>>) (List<?>) mainList);
+            }
+            if (maUsersObj instanceof List<?> maList) {
+                migrationDemoService.setCustomMaUsers((List<Map<String, Object>>) (List<?>) maList);
+            }
+        }
         Map<String, Object> result = migrationDemoService.runPhase(phase);
+        if (phase == 0) {
+            migrationDemoService.clearCustomData();
+        }
         return ResponseEntity.ok(result);
     }
 
@@ -112,5 +128,31 @@ public class MigrationController {
         }).start();
 
         return emitter;
+    }
+
+    @PostMapping("/set-custom-data")
+    public ResponseEntity<Map<String, Object>> setCustomData(
+            @RequestBody Map<String, Object> request) {
+        Object mainUsersObj = request.get("mainUsers");
+        Object maUsersObj = request.get("maUsers");
+
+        if (mainUsersObj instanceof List<?> mainList) {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> mainUsers = (List<Map<String, Object>>) (List<?>) mainList;
+            migrationDemoService.setCustomMainUsers(mainUsers);
+        }
+        if (maUsersObj instanceof List<?> maList) {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> maUsers = (List<Map<String, Object>>) (List<?>) maList;
+            migrationDemoService.setCustomMaUsers(maUsers);
+        }
+
+        return ResponseEntity.ok(Map.of("success", true, "message", "Custom data set"));
+    }
+
+    @PostMapping("/clear-custom-data")
+    public ResponseEntity<Map<String, Object>> clearCustomData() {
+        migrationDemoService.clearCustomData();
+        return ResponseEntity.ok(Map.of("success", true, "message", "Custom data cleared"));
     }
 }
