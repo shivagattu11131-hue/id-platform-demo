@@ -124,6 +124,7 @@ public class ZeroTrustFilter extends OncePerRequestFilter {
                path.startsWith("/js/") ||
                path.startsWith("/images/") ||
                path.startsWith("/architecture/") ||
+               path.startsWith("/docs/") ||
                path.startsWith("/webjars/");
     }
 
