@@ -29,6 +29,7 @@ services:
       - "3001:3001"
     environment:
       - ID_PLATFORM_URL=http://id-platform:3000
+      - ID_PLATFORM_EXTERNAL_URL=http://${VM_IP:-localhost}:3000
       - EXTERNAL_BASE_URL=http://${VM_IP:-localhost}
       - FLASK_DEBUG=false
     depends_on:
@@ -45,6 +46,7 @@ services:
       - "3002:3002"
     environment:
       - ID_PLATFORM_URL=http://id-platform:3000
+      - ID_PLATFORM_EXTERNAL_URL=http://${VM_IP:-localhost}:3000
       - EXTERNAL_BASE_URL=http://${VM_IP:-localhost}
       - FLASK_DEBUG=false
     depends_on:

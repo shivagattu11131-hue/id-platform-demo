@@ -14,6 +14,7 @@ CORS(app, origins="*", supports_credentials=True)
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'main_site.db')
 ID_PLATFORM_URL = os.environ.get("ID_PLATFORM_URL", "http://localhost:3000")
+ID_PLATFORM_EXTERNAL_URL = os.environ.get("ID_PLATFORM_EXTERNAL_URL", os.environ.get("ID_PLATFORM_URL", "http://localhost:3000"))
 EXTERNAL_BASE_URL = os.environ.get("EXTERNAL_BASE_URL", "http://localhost")
 
 
@@ -101,7 +102,7 @@ def login_oidc():
         'code_challenge_method': 'S256'
     }
 
-    return redirect(f"{ID_PLATFORM_URL}/oauth2/authorize?{urlencode(params)}")
+    return redirect(f"{ID_PLATFORM_EXTERNAL_URL}/oauth2/authorize?{urlencode(params)}")
 
 
 @app.route('/callback')

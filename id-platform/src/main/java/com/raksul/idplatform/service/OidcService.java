@@ -71,8 +71,11 @@ public class OidcService {
 
     @PostConstruct
     public void initClients() {
-        seedClient(mainSiteClientId, mainSiteClientSecret, mainSiteRedirectUris, mainSiteScope, mainSiteName);
-        seedClient(maSiteClientId, maSiteClientSecret, maSiteRedirectUris, maSiteScope, maSiteName);
+        List<String> mainUris = resolveRedirectUris("MAIN_SITE_REDIRECT_URI", "http://localhost:3001/callback");
+        List<String> maUris = resolveRedirectUris("MA_SITE_REDIRECT_URI", "http://localhost:3002/callback");
+
+        seedClient(mainSiteClientId, mainSiteClientSecret, mainUris, mainSiteScope, mainSiteName);
+        seedClient(maSiteClientId, maSiteClientSecret, maUris, maSiteScope, maSiteName);
 
         List<OidcClient> dbClients = oidcClientRepository.findAllByActive(true);
         for (OidcClient dbClient : dbClients) {
@@ -85,6 +88,15 @@ public class OidcService {
         }
 
         log.info("Loaded {} OIDC clients: {}", clients.size(), clients.keySet());
+        clients.forEach((id, c) -> log.info("  Client [{}]: redirect_uris={}", id, c.redirectUris));
+    }
+
+    private List<String> resolveRedirectUris(String envVar, String defaultUri) {
+        String envValue = System.getenv(envVar);
+        if (envValue != null && !envValue.isBlank()) {
+            return Arrays.asList(envValue.split("\\s+"));
+        }
+        return Arrays.asList(defaultUri);
     }
 
     private void seedClient(String clientId, String clientSecret, List<String> redirectUris, String scope, String name) {
@@ -92,8 +104,14 @@ public class OidcService {
             String urisStr = String.join(",", redirectUris);
             OidcClient entity = new OidcClient(clientId, clientSecret, urisStr, scope, name);
             oidcClientRepository.save(entity);
+        } else {
+            oidcClientRepository.findByClientId(clientId).ifPresent(entity -> {
+                entity.setRedirectUris(String.join(",", redirectUris));
+                oidcClientRepository.save(entity);
+            });
         }
         clients.put(clientId, new ClientConfig(clientId, clientSecret, redirectUris, scope, name));
+        log.info("Seeded OIDC client [{}]: redirect_uris={}", clientId, redirectUris);
     }
 
     @Transactional
