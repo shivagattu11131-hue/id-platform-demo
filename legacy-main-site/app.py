@@ -558,9 +558,7 @@ LOGGED_IN_PAGE = """
             <a href="{{ external_url }}:3002/" class="btn btn-primary">Go to MA Site</a>
             {% endif %}
             <a href="/do-logout" class="btn btn-danger">Logout</a>
-            {% if not oidc_enabled %}
             <a href="#" class="btn btn-outline" onclick="cancelMembership()">Cancel Membership</a>
-            {% endif %}
         </div>
     </div>
     <script>
