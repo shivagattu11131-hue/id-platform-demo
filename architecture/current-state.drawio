@@ -6,57 +6,88 @@
         <mxCell id="1" parent="0"/>
 
         <!-- Title -->
-        <mxCell id="title" value="CURRENT STATE: Two Independent Auth Systems" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=18;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
-          <mxGeometry x="284" y="20" width="600" height="40" as="geometry"/>
+        <mxCell id="title" value="CURRENT STATE: Two Independent Auth Systems (Before Migration)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=18;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="234" y="15" width="700" height="40" as="geometry"/>
         </mxCell>
 
-        <!-- Main Site -->
-        <mxCell id="main_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;arcSize=10;" vertex="1" parent="1">
-          <mxGeometry x="50" y="100" width="450" height="350" as="geometry"/>
+        <!-- Users -->
+        <mxCell id="users" value="" style="shape=mxgraph.basic.user;fillColor=#36393d;strokeColor=none;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="545" y="70" width="40" height="40" as="geometry"/>
         </mxCell>
-        <mxCell id="main_label" value="Main Site (Rails Monolith)&lt;br&gt;3M Customers | 100M yen/day" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=14;fontStyle=1;fontColor=#1a5276;" vertex="1" parent="1">
-          <mxGeometry x="140" y="110" width="280" height="40" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="main_users" value="&lt;b&gt;Users Table&lt;/b&gt;&lt;br&gt;id | username | email&lt;br&gt;password_hash | display_name" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="80" y="200" width="160" height="100" as="geometry"/>
+        <mxCell id="users_label" value="Users must register separately on each site&#xa;Same email = two different accounts&#xa;No single sign-on" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontStyle=0;fontColor=#CC0000;" vertex="1" parent="1">
+          <mxGeometry x="380" y="115" width="360" height="50" as="geometry"/>
         </mxCell>
 
-        <mxCell id="main_auth" value="&lt;b&gt;Session Auth&lt;/b&gt;&lt;br&gt;SHA-256 + Salt&lt;br&gt;server-side sessions&lt;br&gt;No OIDC | No SSO" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="300" y="180" width="170" height="100" as="geometry"/>
+        <!-- Main Site Box -->
+        <mxCell id="main_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;arcSize=10;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="50" y="180" width="450" height="380" as="geometry"/>
+        </mxCell>
+        <mxCell id="main_title" value="Main Site (E-Commerce Platform)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=14;fontStyle=1;fontColor=#1a5276;" vertex="1" parent="1">
+          <mxGeometry x="140" y="190" width="270" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="main_stats" value="3M Customers | ~100M yen/day" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontStyle=0;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="160" y="215" width="230" height="20" as="geometry"/>
         </mxCell>
 
-        <mxCell id="main_api" value="&lt;b&gt;REST API&lt;/b&gt;&lt;br&gt;POST /login&lt;br&gt;POST /register&lt;br&gt;GET /users/me" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="130" y="330" width="180" height="80" as="geometry"/>
+        <mxCell id="main_stack" value="Python Flask + SQLite" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=0;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="190" y="240" width="140" height="20" as="geometry"/>
         </mxCell>
 
-        <!-- MA Site -->
-        <mxCell id="ma_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=10;" vertex="1" parent="1">
-          <mxGeometry x="600" y="100" width="450" height="350" as="geometry"/>
-        </mxCell>
-        <mxCell id="ma_label" value="MA Site (Acquired Monolith)&lt;br&gt;100K Members | 20K MAU" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=14;fontStyle=1;fontColor=#1e8449;" vertex="1" parent="1">
-          <mxGeometry x="700" y="110" width="280" height="40" as="geometry"/>
+        <mxCell id="main_db" value="&lt;b&gt;users&lt;/b&gt;&lt;br&gt;id | email&lt;br&gt;password_hash&lt;br&gt;display_name&lt;br&gt;created_at" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="280" width="150" height="110" as="geometry"/>
         </mxCell>
 
-        <mxCell id="ma_users" value="&lt;b&gt;Users Table&lt;/b&gt;&lt;br&gt;id | username | email&lt;br&gt;password_hash | company_name" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="630" y="200" width="160" height="100" as="geometry"/>
+        <mxCell id="main_hash" value="&lt;b&gt;SHA-256 + Salt&lt;/b&gt;&lt;br&gt;salt = &quot;raksul_main_site_salt_2024&quot;&lt;br&gt;hashlib.sha256(salt + password)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="260" y="280" width="210" height="60" as="geometry"/>
         </mxCell>
 
-        <mxCell id="ma_auth" value="&lt;b&gt;Session Auth&lt;/b&gt;&lt;br&gt;SHA-256 + Different Salt&lt;br&gt;server-side sessions&lt;br&gt;No OIDC | No SSO" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="850" y="180" width="170" height="100" as="geometry"/>
+        <mxCell id="main_api" value="&lt;b&gt;REST API&lt;/b&gt;&lt;br&gt;POST /api/auth/login&lt;br&gt;POST /api/auth/register&lt;br&gt;GET /api/users/me&lt;br&gt;POST /do-login (form)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="80" y="410" width="200" height="90" as="geometry"/>
         </mxCell>
 
-        <mxCell id="ma_api" value="&lt;b&gt;REST API&lt;/b&gt;&lt;br&gt;POST /login&lt;br&gt;POST /register&lt;br&gt;GET /users/me" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="700" y="330" width="180" height="80" as="geometry"/>
+        <mxCell id="main_session" value="&lt;b&gt;Server-Side Session&lt;/b&gt;&lt;br&gt;Flask session cookie&lt;br&gt;No token validation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="310" y="410" width="170" height="60" as="geometry"/>
         </mxCell>
 
-        <!-- Problem indicators -->
+        <!-- MA Site Box -->
+        <mxCell id="ma_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=10;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="570" y="180" width="450" height="380" as="geometry"/>
+        </mxCell>
+        <mxCell id="ma_title" value="MA Site (Acquired Company)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=14;fontStyle=1;fontColor=#1e8449;" vertex="1" parent="1">
+          <mxGeometry x="660" y="190" width="270" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="ma_stats" value="100K Members | 20K MAU" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontStyle=0;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="690" y="215" width="200" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ma_stack" value="Python Flask + SQLite" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=0;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="710" y="240" width="140" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ma_db" value="&lt;b&gt;members&lt;/b&gt;&lt;br&gt;id | email&lt;br&gt;password_md5&lt;br&gt;first_name | last_name&lt;br&gt;company_name" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="600" y="280" width="150" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ma_hash" value="&lt;b&gt;Plain MD5&lt;/b&gt;&lt;br&gt;hashlib.md5(password).hexdigest()&lt;br&gt;No salt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="780" y="280" width="210" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ma_api" value="&lt;b&gt;REST API&lt;/b&gt;&lt;br&gt;POST /api/auth/login&lt;br&gt;POST /api/auth/register&lt;br&gt;GET /api/users/me&lt;br&gt;POST /do-login (form)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="600" y="410" width="200" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ma_session" value="&lt;b&gt;Server-Side Session&lt;/b&gt;&lt;br&gt;Flask session cookie&lt;br&gt;No token validation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="830" y="410" width="170" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- No Connection -->
         <mxCell id="no_conn" value="NO CONNECTION&#xa;Between Auth Systems" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=12;fontStyle=1;fontColor=#CC0000;" vertex="1" parent="1">
-          <mxGeometry x="520" y="250" width="70" height="50" as="geometry"/>
+          <mxGeometry x="490" y="350" width="160" height="40" as="geometry"/>
         </mxCell>
 
-        <mxCell id="problem1" value="Problems:&#xa;- Users must register separately on each site&#xa;- Same email = two different accounts&#xa;- No single sign-on&#xa;- Duplicate user data&#xa;- Inconsistent password policies" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=15;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
-          <mxGeometry x="280" y="500" width="380" height="120" as="geometry"/>
+        <!-- Problems Note -->
+        <mxCell id="problems" value="&lt;b&gt;Key Problems:&lt;/b&gt;&#xa;1. Users register separately on each site&#xa;2. Same email creates two different accounts&#xa;3. No single sign-on across services&#xa;4. Duplicate user data, inconsistent password policies&#xa;5. Different hash algorithms (SHA-256 vs MD5)&#xa;6. Different DB schemas (users vs members)" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=15;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="300" y="590" width="460" height="120" as="geometry"/>
         </mxCell>
 
       </root>

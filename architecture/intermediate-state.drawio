@@ -6,100 +6,123 @@
         <mxCell id="1" parent="0"/>
 
         <!-- Title -->
-        <mxCell id="title" value="INTERMEDIATE STATE: During Migration (Dual-Write Phase)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=18;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
-          <mxGeometry x="234" y="10" width="700" height="40" as="geometry"/>
+        <mxCell id="title" value="INTERMEDIATE STATE: During Migration (Phases 0-2)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=18;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="260" y="10" width="650" height="40" as="geometry"/>
         </mxCell>
 
-        <!-- ID Platform (center, new) -->
-        <mxCell id="idp_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;arcSize=10;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
-          <mxGeometry x="380" y="420" width="400" height="200" as="geometry"/>
+        <!-- Phase flow at top -->
+        <mxCell id="phase0" value="Phase 0&#xa;Bulk Import" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="60" width="100" height="40" as="geometry"/>
         </mxCell>
-        <mxCell id="idp_label" value="ID PLATFORM (NEW)&lt;br&gt;Spring Boot + OIDC + JWT (RS256)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=13;fontStyle=1;fontColor=#7d6608;" vertex="1" parent="1">
-          <mxGeometry x="430" y="430" width="310" height="40" as="geometry"/>
+        <mxCell id="phase1" value="Phase 1&#xa;Shadow Mode" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="250" y="60" width="100" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="phase2" value="Phase 2&#xa;Dual-Write" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="60" width="100" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="arrow_p01" value="" style="endArrow=block;html=1;rounded=1;strokeWidth=1;strokeColor=#666666;" edge="1" parent="1" source="phase0" target="phase1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="arrow_p12" value="" style="endArrow=block;html=1;rounded=1;strokeWidth=1;strokeColor=#666666;" edge="1" parent="1" source="phase1" target="phase2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="phase_note" value="All phases complete before cutover" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=0;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="560" y="65" width="200" height="20" as="geometry"/>
         </mxCell>
 
-        <mxCell id="idp_db" value="&lt;b&gt;Unified User Store&lt;/b&gt;&lt;br&gt;Aurora MySQL (Production)&lt;br&gt;H2 (Demo)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="410" y="480" width="160" height="100" as="geometry"/>
+        <!-- ID Platform (Center, being built up) -->
+        <mxCell id="idp_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;arcSize=8;strokeWidth=3;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="400" width="460" height="280" as="geometry"/>
+        </mxCell>
+        <mxCell id="idp_title" value="ID PLATFORM (Spring Boot + Java 17)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=14;fontStyle=1;fontColor=#7d6608;" vertex="1" parent="1">
+          <mxGeometry x="430" y="410" width="300" height="25" as="geometry"/>
         </mxCell>
 
-        <mxCell id="idp_oidc" value="&lt;b&gt;OIDC Endpoints&lt;/b&gt;&lt;br&gt;/.well-known/openid-configuration&lt;br&gt;/oauth2/authorize&lt;br&gt;/oauth2/token&lt;br&gt;/oauth2/userinfo&lt;br&gt;/jwks.json" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;align=left;spacingLeft=5;" vertex="1" parent="1">
-          <mxGeometry x="600" y="470" width="170" height="120" as="geometry"/>
+        <mxCell id="idp_db" value="&lt;b&gt;Unified User Store&lt;/b&gt;&lt;br&gt;H2 (demo) / Aurora MySQL (prod)&lt;br&gt;users | auth_tokens | migration_status" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="380" y="450" width="200" height="80" as="geometry"/>
         </mxCell>
 
-        <!-- Main Site (still active) -->
+        <mxCell id="idp_oidc" value="&lt;b&gt;OIDC Provider&lt;/b&gt;&lt;br&gt;/.well-known/openid-configuration&lt;br&gt;/oauth2/authorize&lt;br&gt;/oauth2/token&lt;br&gt;/jwks.json (RS256)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="600" y="450" width="190" height="100" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="idp_migration" value="&lt;b&gt;Migration Engine&lt;/b&gt;&lt;br&gt;- bulkImport()&lt;br&gt;- validateInShadow()&lt;br&gt;- dualWrite()&lt;br&gt;- cutover() / rollback()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="380" y="550" width="180" height="100" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="idp_password" value="&lt;b&gt;Multi-Hash Validator&lt;/b&gt;&lt;br&gt;- BCrypt (native)&lt;br&gt;- SHA-256 + salt (Main)&lt;br&gt;- Plain MD5 (MA Site)&lt;br&gt;- Lazy upgrade to BCrypt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="580" y="560" width="180" height="90" as="geometry"/>
+        </mxCell>
+
+        <!-- Main Site (Still Active) -->
         <mxCell id="main_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;arcSize=10;" vertex="1" parent="1">
-          <mxGeometry x="50" y="70" width="400" height="300" as="geometry"/>
+          <mxGeometry x="40" y="120" width="280" height="250" as="geometry"/>
         </mxCell>
-        <mxCell id="main_label" value="Main Site (Rails Monolith)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=13;fontStyle=1;fontColor=#1a5276;" vertex="1" parent="1">
-          <mxGeometry x="150" y="80" width="200" height="30" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="main_db" value="&lt;b&gt;Legacy DB&lt;/b&gt;&lt;br&gt;(Still Primary)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="80" y="130" width="140" height="80" as="geometry"/>
+        <mxCell id="main_title" value="Main Site (Port 3001)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=12;fontStyle=1;fontColor=#1a5276;" vertex="1" parent="1">
+          <mxGeometry x="105" y="125" width="150" height="25" as="geometry"/>
         </mxCell>
 
-        <mxCell id="main_dual" value="&lt;b&gt;Dual-Write Logic&lt;/b&gt;&lt;br&gt;Write to Legacy DB + ID Platform" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="280" y="130" width="150" height="80" as="geometry"/>
+        <mxCell id="main_db" value="&lt;b&gt;Legacy DB&lt;/b&gt;&lt;br&gt;(Still Primary Auth)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="165" width="120" height="60" as="geometry"/>
         </mxCell>
 
-        <mxCell id="main_shadow" value="&lt;b&gt;Shadow Validator&lt;/b&gt;&lt;br&gt;Compare auth results" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="80" y="250" width="150" height="60" as="geometry"/>
+        <mxCell id="main_oidc_check" value="&lt;b&gt;is_oidc_enabled()&lt;/b&gt;&lt;br&gt;Checks /api/migration/status&lt;br&gt;Returns: false (pre-cutover)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="200" y="155" width="190" height="55" as="geometry"/>
         </mxCell>
 
-        <!-- MA Site (still active) -->
+        <mxCell id="main_flow" value="&lt;b&gt;Auth Flow (Pre-Cutover):&lt;/b&gt;&lt;br&gt;1. User submits login form&lt;br&gt;2. Flask validates password_hash&lt;br&gt;3. Server-side session created&lt;br&gt;4. (No IDP involvement yet)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="60" y="240" width="220" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="main_seed" value="&lt;b&gt;Seed Data:&lt;/b&gt;&lt;br&gt;john@example.com&lt;br&gt;jane@example.com&lt;br&gt;bob@example.com&lt;br&gt;shared@example.com&lt;br&gt;conflict@example.com" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=9;fontStyle=0;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="60" y="325" width="150" height="35" as="geometry"/>
+        </mxCell>
+
+        <!-- MA Site (Still Active) -->
         <mxCell id="ma_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=10;" vertex="1" parent="1">
-          <mxGeometry x="710" y="70" width="400" height="300" as="geometry"/>
+          <mxGeometry x="790" y="120" width="280" height="250" as="geometry"/>
         </mxCell>
-        <mxCell id="ma_label" value="MA Site (Acquired Monolith)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=13;fontStyle=1;fontColor=#1e8449;" vertex="1" parent="1">
-          <mxGeometry x="810" y="80" width="200" height="30" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="ma_db" value="&lt;b&gt;Legacy DB&lt;/b&gt;&lt;br&gt;(Still Primary)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="740" y="130" width="140" height="80" as="geometry"/>
+        <mxCell id="ma_title" value="MA Site (Port 3002)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=12;fontStyle=1;fontColor=#1e8449;" vertex="1" parent="1">
+          <mxGeometry x="860" y="125" width="140" height="25" as="geometry"/>
         </mxCell>
 
-        <mxCell id="ma_dual" value="&lt;b&gt;Dual-Write Logic&lt;/b&gt;&lt;br&gt;Write to Legacy DB + ID Platform" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="940" y="130" width="150" height="80" as="geometry"/>
+        <mxCell id="ma_db" value="&lt;b&gt;Legacy DB&lt;/b&gt;&lt;br&gt;(Still Primary Auth)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="810" y="165" width="120" height="60" as="geometry"/>
         </mxCell>
 
-        <mxCell id="ma_shadow" value="&lt;b&gt;Shadow Validator&lt;/b&gt;&lt;br&gt;Compare auth results" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="940" y="250" width="150" height="60" as="geometry"/>
+        <mxCell id="ma_oidc_check" value="&lt;b&gt;is_oidc_enabled()&lt;/b&gt;&lt;br&gt;Checks /api/migration/status&lt;br&gt;Returns: false (pre-cutover)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="950" y="155" width="190" height="55" as="geometry"/>
         </mxCell>
 
-        <!-- Arrows: Dual-Write to ID Platform -->
-        <mxCell id="arrow_main_to_idp" value="Dual-Write" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#d6b656;strokeWidth=2;dashed=1;" edge="1" parent="1" source="main_dual" target="idp_box">
+        <mxCell id="ma_flow" value="&lt;b&gt;Auth Flow (Pre-Cutover):&lt;/b&gt;&lt;br&gt;1. User submits login form&lt;br&gt;2. Flask validates password_md5&lt;br&gt;3. Server-side session created&lt;br&gt;4. (No IDP involvement yet)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="810" y="240" width="220" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ma_seed" value="&lt;b&gt;Seed Data:&lt;/b&gt;&lt;br&gt;mauser1@example.com&lt;br&gt;mauser2@example.com&lt;br&gt;mauser3@example.com&lt;br&gt;shared@example.com (conflict)&lt;br&gt;conflict@example.com" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=9;fontStyle=0;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="810" y="325" width="180" height="35" as="geometry"/>
+        </mxCell>
+
+        <!-- Phase 0: Import Arrows -->
+        <mxCell id="arrow_import_main" value="Phase 0: Bulk Import&#xa;GET /api/users/all → POST /api/migration/import" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="main_db" target="idp_migration">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
-        <mxCell id="arrow_ma_to_idp" value="Dual-Write" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#d6b656;strokeWidth=2;dashed=1;" edge="1" parent="1" source="ma_dual" target="idp_box">
+        <mxCell id="arrow_import_ma" value="Phase 0: Bulk Import&#xa;GET /api/users/all → POST /api/migration/import" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="ma_db" target="idp_migration">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
-        <!-- Arrows: Shadow Validation -->
-        <mxCell id="arrow_shadow_main" value="Shadow" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;strokeColor=#b85450;strokeWidth=1;dashed=1;" edge="1" parent="1" source="main_shadow" target="idp_box">
+        <!-- Phase 1: Shadow Validation -->
+        <mxCell id="arrow_shadow_main" value="Phase 1: Shadow&#xa;Validate credentials&#xa;in background" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;strokeColor=#d6b656;strokeWidth=1;dashed=1;" edge="1" parent="1" source="main_flow" target="idp_box">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
-        <mxCell id="arrow_shadow_ma" value="Shadow" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;strokeColor=#b85450;strokeWidth=1;dashed=1;" edge="1" parent="1" source="ma_shadow" target="idp_box">
+        <mxCell id="arrow_shadow_ma" value="Phase 1: Shadow&#xa;Validate credentials&#xa;in background" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;strokeColor=#d6b656;strokeWidth=1;dashed=1;" edge="1" parent="1" source="ma_flow" target="idp_box">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
-        <!-- Users -->
-        <mxCell id="users_icon" value="Users" style="shape=mxgraph.basic.user;fillColor=#36393d;strokeColor=none;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="220" y="380" width="40" height="40" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="users_icon2" value="Users" style="shape=mxgraph.basic.user;fillColor=#36393d;strokeColor=none;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="860" y="380" width="40" height="40" as="geometry"/>
-        </mxCell>
-
-        <!-- Phase label -->
-        <mxCell id="phase_label" value="Phases: 0 (Import) → 1 (Shadow) → 2 (Dual-Write)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=12;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="300" y="640" width="480" height="30" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="note" value="Key: During this phase, both legacy sites still handle auth.&#xa;ID Platform is being populated and validated.&#xa;No user-facing changes yet." style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=15;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
-          <mxGeometry x="350" y="670" width="400" height="80" as="geometry"/>
+        <!-- Key Insight -->
+        <mxCell id="key_insight" value="&lt;b&gt;Key: No user-facing changes during these phases.&lt;/b&gt;&lt;br&gt;Both legacy sites handle auth normally. ID Platform is populated&#xa;and validated in the background before cutover." style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=15;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="180" y="700" width="540" height="60" as="geometry"/>
         </mxCell>
 
       </root>

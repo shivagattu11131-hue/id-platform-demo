@@ -6,108 +6,122 @@
         <mxCell id="1" parent="0"/>
 
         <!-- Title -->
-        <mxCell id="title" value="FINAL STATE: Unified ID Platform with SSO" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=18;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
-          <mxGeometry x="300" y="10" width="500" height="40" as="geometry"/>
+        <mxCell id="title" value="FINAL STATE: Unified ID Platform with SSO (After Cutover)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=18;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="250" y="10" width="670" height="40" as="geometry"/>
         </mxCell>
 
-        <!-- Main Site (thin client) -->
-        <mxCell id="main_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;arcSize=10;" vertex="1" parent="1">
-          <mxGeometry x="50" y="100" width="250" height="250" as="geometry"/>
-        </mxCell>
-        <mxCell id="main_label" value="Main Site&lt;br&gt;(Thin Client)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=13;fontStyle=1;fontColor=#1a5276;" vertex="1" parent="1">
-          <mxGeometry x="110" y="110" width="120" height="40" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="main_oidc" value="&lt;b&gt;OIDC Client&lt;/b&gt;&lt;br&gt;Redirects to ID Platform&lt;br&gt;Validates JWT tokens" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="80" y="170" width="180" height="70" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="main_cache" value="&lt;b&gt;Redis Cache&lt;/b&gt;&lt;br&gt;Session tokens" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="100" y="260" width="130" height="60" as="geometry"/>
-        </mxCell>
-
-        <!-- MA Site (thin client) -->
-        <mxCell id="ma_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=10;" vertex="1" parent="1">
-          <mxGeometry x="860" y="100" width="250" height="250" as="geometry"/>
-        </mxCell>
-        <mxCell id="ma_label" value="MA Site&lt;br&gt;(Thin Client)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=13;fontStyle=1;fontColor=#1e8449;" vertex="1" parent="1">
-          <mxGeometry x="920" y="110" width="120" height="40" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="ma_oidc" value="&lt;b&gt;OIDC Client&lt;/b&gt;&lt;br&gt;Redirects to ID Platform&lt;br&gt;Validates JWT tokens" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="890" y="170" width="180" height="70" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="ma_cache" value="&lt;b&gt;Redis Cache&lt;/b&gt;&lt;br&gt;Session tokens" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="910" y="260" width="130" height="60" as="geometry"/>
-        </mxCell>
-
-        <!-- SSO indicator -->
+        <!-- SSO Banner -->
         <mxCell id="sso_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;arcSize=10;dashed=1;" vertex="1" parent="1">
-          <mxGeometry x="300" y="100" width="500" height="50" as="geometry"/>
+          <mxGeometry x="250" y="55" width="660" height="40" as="geometry"/>
         </mxCell>
-        <mxCell id="sso_label" value="SINGLE SIGN-ON (SSO)&#xa;Login once on Main Site → Access MA Site without re-authentication" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=12;fontStyle=1;fontColor=#CC0000;" vertex="1" parent="1">
-          <mxGeometry x="370" y="105" width="370" height="40" as="geometry"/>
+        <mxCell id="sso_label" value="SINGLE SIGN-ON (SSO) — Login once on Main Site → Access MA Site without re-authentication" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=12;fontStyle=1;fontColor=#CC0000;" vertex="1" parent="1">
+          <mxGeometry x="310" y="60" width="540" height="25" as="geometry"/>
         </mxCell>
 
-        <!-- ID Platform (Central) -->
+        <!-- Main Site (OIDC Client) -->
+        <mxCell id="main_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;arcSize=10;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="40" y="120" width="220" height="280" as="geometry"/>
+        </mxCell>
+        <mxCell id="main_title" value="Main Site (Port 3001)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=12;fontStyle=1;fontColor=#1a5276;" vertex="1" parent="1">
+          <mxGeometry x="80" y="125" width="140" height="25" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="main_oidc_check" value="&lt;b&gt;is_oidc_enabled() → true&lt;/b&gt;&lt;br&gt;Migration status: CUTOVER_COMPLETE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="60" y="155" width="180" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="main_client" value="&lt;b&gt;OIDC Client&lt;/b&gt;&lt;br&gt;client_id: main-site&lt;br&gt;client_secret: main-site-secret&lt;br&gt;PKCE: S256" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="60" y="205" width="180" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="main_flow" value="&lt;b&gt;Post-Cutover Auth Flow:&lt;/b&gt;&lt;br&gt;1. User clicks Login&lt;br&gt;2. Redirect → IDP /oauth2/authorize&lt;br&gt;3. User authenticates at IDP&lt;br&gt;4. ?code=... callback&lt;br&gt;5. POST /oauth2/token → JWT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="60" y="285" width="180" height="90" as="geometry"/>
+        </mxCell>
+
+        <!-- MA Site (OIDC Client) -->
+        <mxCell id="ma_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=10;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="850" y="120" width="220" height="280" as="geometry"/>
+        </mxCell>
+        <mxCell id="ma_title" value="MA Site (Port 3002)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=12;fontStyle=1;fontColor=#1e8449;" vertex="1" parent="1">
+          <mxGeometry x="895" y="125" width="130" height="25" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ma_oidc_check" value="&lt;b&gt;is_oidc_enabled() → true&lt;/b&gt;&lt;br&gt;Migration status: CUTOVER_COMPLETE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="870" y="155" width="180" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ma_client" value="&lt;b&gt;OIDC Client&lt;/b&gt;&lt;br&gt;client_id: ma-site&lt;br&gt;client_secret: ma-site-secret&lt;br&gt;PKCE: S256" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="870" y="205" width="180" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ma_flow" value="&lt;b&gt;Post-Cutover Auth Flow:&lt;/b&gt;&lt;br&gt;1. User clicks Login&lt;br&gt;2. Redirect → IDP /oauth2/authorize&lt;br&gt;3. User authenticates at IDP&lt;br&gt;4. ?code=... callback&lt;br&gt;5. POST /oauth2/token → JWT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="870" y="285" width="180" height="90" as="geometry"/>
+        </mxCell>
+
+        <!-- ID Platform (Central Hub) -->
         <mxCell id="idp_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;arcSize=8;strokeWidth=3;" vertex="1" parent="1">
-          <mxGeometry x="280" y="350" width="600" height="300" as="geometry"/>
+          <mxGeometry x="290" y="400" width="530" height="300" as="geometry"/>
         </mxCell>
-        <mxCell id="idp_label" value="UNIFIED ID PLATFORM" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=16;fontStyle=1;fontColor=#7d6608;" vertex="1" parent="1">
-          <mxGeometry x="430" y="360" width="220" height="30" as="geometry"/>
+        <mxCell id="idp_title" value="UNIFIED ID PLATFORM" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=16;fontStyle=1;fontColor=#7d6608;" vertex="1" parent="1">
+          <mxGeometry x="440" y="410" width="220" height="25" as="geometry"/>
         </mxCell>
-
-        <mxCell id="idp_tech" value="Java 17 | Spring Boot 3 | OpenID Connect | JWT (RS256)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontStyle=0;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="350" y="390" width="400" height="20" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="idp_oidc" value="&lt;b&gt;OIDC Provider&lt;/b&gt;&lt;br&gt;/.well-known/openid-configuration&lt;br&gt;/oauth2/authorize&lt;br&gt;/oauth2/token&lt;br&gt;/oauth2/userinfo&lt;br&gt;/jwks.json&lt;br&gt;/oauth2/revoke" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;align=left;spacingLeft=5;" vertex="1" parent="1">
-          <mxGeometry x="310" y="420" width="200" height="150" as="geometry"/>
+        <mxCell id="idp_tech" value="Java 17 | Spring Boot 3 | OIDC | JWT RS256 | Zero-Trust" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=0;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="390" y="435" width="330" height="18" as="geometry"/>
         </mxCell>
 
-        <mxCell id="idp_security" value="&lt;b&gt;Zero-Trust Security&lt;/b&gt;&lt;br&gt;- Every request validated&lt;br&gt;- RSA-256 token signing&lt;br&gt;- Constant-time comparison&lt;br&gt;- Rate limiting per user/IP&lt;br&gt;- Token revocation support" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;align=left;spacingLeft=5;" vertex="1" parent="1">
-          <mxGeometry x="540" y="420" width="180" height="120" as="geometry"/>
+        <mxCell id="idp_oidc_ep" value="&lt;b&gt;OIDC Endpoints&lt;/b&gt;&lt;br&gt;/.well-known/openid-configuration&lt;br&gt;/oauth2/authorize (login page + PKCE)&lt;br&gt;/oauth2/token (code exchange)&lt;br&gt;/oauth2/userinfo (profile)&lt;br&gt;/jwks.json (public keys)&lt;br&gt;/oauth2/revoke (token revocation)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="310" y="460" width="210" height="120" as="geometry"/>
         </mxCell>
 
-        <mxCell id="idp_migration" value="&lt;b&gt;Migration Service&lt;/b&gt;&lt;br&gt;- Bulk import from legacy&lt;br&gt;- Conflict resolution&lt;br&gt;- Dual-write sync&lt;br&gt;- Cutover orchestration&lt;br&gt;- Rollback support" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;spacingLeft=5;" vertex="1" parent="1">
-          <mxGeometry x="740" y="420" width="130" height="120" as="geometry"/>
+        <mxCell id="idp_security" value="&lt;b&gt;Zero-Trust Security&lt;/b&gt;&lt;br&gt;ZeroTrustFilter validates JWT&lt;br&gt;on every request&lt;br&gt;- RS256 asymmetric signing&lt;br&gt;- Token revocation support&lt;br&gt;- Endpoint allowlist" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="540" y="460" width="160" height="100" as="geometry"/>
         </mxCell>
 
-        <!-- Aurora MySQL -->
-        <mxCell id="aurora" value="&lt;b&gt;Aurora MySQL&lt;/b&gt;&lt;br&gt;Unified User Store&lt;br&gt;users | auth_tokens | migration_status" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="380" y="560" width="200" height="80" as="geometry"/>
+        <mxCell id="idp_password" value="&lt;b&gt;Multi-Hash Password Validator&lt;/b&gt;&lt;br&gt;1. BCrypt (native)&lt;br&gt;2. SHA-256 + salt (Main Site legacy)&lt;br&gt;3. Plain MD5 (MA Site legacy)&lt;br&gt;→ Lazy upgrade to BCrypt on login" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="720" y="460" width="180" height="90" as="geometry"/>
         </mxCell>
 
-        <!-- AWS Infrastructure -->
-        <mxCell id="aws_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;arcSize=5;dashed=1;" vertex="1" parent="1">
-          <mxGeometry x="620" y="560" width="260" height="80" as="geometry"/>
-        </mxCell>
-        <mxCell id="aws_label" value="&lt;b&gt;AWS Infrastructure&lt;/b&gt;&lt;br&gt;ECS | EC2 | CloudFront | Lambda&lt;br&gt;WAF | CodePipeline | Datadog" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=0;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="640" y="565" width="220" height="60" as="geometry"/>
+        <mxCell id="idp_session" value="&lt;b&gt;SSO Session&lt;/b&gt;&lt;br&gt;IDP_SESSION cookie (HttpOnly)&lt;br&gt;Silent auth: prompt=none&lt;br&gt;24-hour session lifetime" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="310" y="590" width="180" height="70" as="geometry"/>
         </mxCell>
 
-        <!-- Arrows -->
-        <mxCell id="arrow_main_idp" value="OIDC" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="main_oidc" target="idp_box">
+        <mxCell id="idp_db" value="&lt;b&gt;Aurora MySQL / H2&lt;/b&gt;&lt;br&gt;users (unified store)&lt;br&gt;auth_tokens (JWT tracking)&lt;br&gt;migration_status (phase state)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="510" y="590" width="170" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="idp_api" value="&lt;b&gt;Migration API&lt;/b&gt;&lt;br&gt;/api/migration/status&lt;br&gt;/api/migration/cutover&lt;br&gt;/api/migration/rollback&lt;br&gt;/api/migration/run-demo (SSE)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="700" y="590" width="180" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- OIDC Auth Flow Arrows -->
+        <mxCell id="arrow_main_oidc" value="OIDC Auth Code Flow&#xa;+ PKCE (S256)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="main_client" target="idp_box">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
-        <mxCell id="arrow_ma_idp" value="OIDC" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="ma_oidc" target="idp_box">
+        <mxCell id="arrow_ma_oidc" value="OIDC Auth Code Flow&#xa;+ PKCE (S256)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="ma_client" target="idp_box">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
-        <!-- New SSO arrow (Main → MA via ID Platform) -->
-        <mxCell id="sso_arrow1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;strokeColor=#CC0000;strokeWidth=2;dashed=1;" edge="1" parent="1" source="main_box" target="ma_box">
+        <!-- SSO Arrow (via IDP) -->
+        <mxCell id="sso_arrow1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#CC0000;strokeWidth=2;dashed=1;" edge="1" parent="1" source="main_box" target="ma_box">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="550" y="90"/>
+              <mxPoint x="550" y="110"/>
             </Array>
           </mxGeometry>
         </mxCell>
 
-        <!-- Business benefits -->
-        <mxCell id="benefits" value="Benefits:&#xa;• Customers use one ID across all services&#xa;• New SaaS services launch in days, not months&#xa;• Unified customer data for analytics&#xa;• M&A integrations standardized&#xa;• Zero-trust security posture" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=15;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
-          <mxGeometry x="50" y="680" width="350" height="100" as="geometry"/>
+        <!-- Rollback Path -->
+        <mxCell id="rollback_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;arcSize=10;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="720" width="350" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="rollback_label" value="&lt;b&gt;Rollback Available:&lt;/b&gt; POST /api/migration/rollback?site=main|ma → Reverts to legacy auth" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=0;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="60" y="730" width="310" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Benefits -->
+        <mxCell id="benefits" value="&lt;b&gt;Result:&lt;/b&gt;&#xa;- Unified identity across all services&#xa;- One login → access both sites (SSO)&#xa;- Legacy password hashes preserved (no resets)&#xa;- Zero-downtime migration&#xa;- Emergency rollback always available" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=15;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="420" y="720" width="350" height="90" as="geometry"/>
         </mxCell>
 
       </root>
