@@ -151,6 +151,7 @@ th { color: #64748b; font-weight: 600; }
     <div class="group">Overview</div>
     <a href="#" data-tab="overview" class="active">Dashboard</a>
     <a href="#" data-tab="endpoints">All Endpoints</a>
+    <a href="#" data-tab="architecture">Architecture</a>
     <div class="group">OIDC</div>
     <a href="#" data-tab="discovery">Discovery</a>
     <a href="#" data-tab="jwks">JWKS Keys</a>
@@ -486,6 +487,172 @@ th { color: #64748b; font-weight: 600; }
             4. Implement the Authorization Code + PKCE flow in your service<br>
             5. Users can now login once on any service and access all registered services (SSO)
         </p>
+    </div>
+</div>
+
+<div class="section" id="architecture">
+    <div class="card">
+        <h2>System Architecture</h2>
+        <p style="color:#94a3b8;font-size:13px;margin-bottom:20px">Architecture evolution from two independent auth systems to a unified OIDC-based ID Platform.</p>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+        <h2 style="color:#f59e0b">Before Migration</h2>
+        <p style="color:#94a3b8;font-size:13px;margin-bottom:12px">Two e-commerce sites with independent authentication systems. No shared identity, no SSO, duplicated user management.</p>
+        <div style="text-align:center;margin:16px 0">
+            <img src="/architecture/current-state.png" style="max-width:100%;border:1px solid #334155;border-radius:8px" alt="Current State Architecture">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px">
+            <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px">
+                <h3 style="color:#38bdf8;font-size:14px;margin-bottom:8px">Main Site (Port 3001)</h3>
+                <p style="color:#94a3b8;font-size:12px;line-height:1.6">
+                    3M customers, ~100M yen/day revenue<br>
+                    SHA-256 + salt password hashing<br>
+                    SQLite database<br>
+                    Username + password auth
+                </p>
+            </div>
+            <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px">
+                <h3 style="color:#a78bfa;font-size:14px;margin-bottom:8px">MA Site (Port 3002)</h3>
+                <p style="color:#94a3b8;font-size:12px;line-height:1.6">
+                    100K members, 20K MAU<br>
+                    Plain MD5 password hashing<br>
+                    SQLite database<br>
+                    Username + password auth
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+        <h2 style="color:#38bdf8">During Migration (Phases 0-2)</h2>
+        <p style="color:#94a3b8;font-size:13px;margin-bottom:12px">ID Platform runs alongside both legacy sites. Users are imported, credentials are validated in shadow mode, and new writes are synchronized to both databases.</p>
+        <div style="text-align:center;margin:16px 0">
+            <img src="/architecture/intermediate-state.png" style="max-width:100%;border:1px solid #334155;border-radius:8px" alt="Intermediate State Architecture">
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+        <h2 style="color:#22c55e">After Cutover (Phase 3+)</h2>
+        <p style="color:#94a3b8;font-size:13px;margin-bottom:12px">All authentication is handled by the ID Platform via OIDC. Users get Single Sign-On across both sites. Legacy databases are kept in sync.</p>
+        <div style="text-align:center;margin:16px 0">
+            <img src="/architecture/final-state.png" style="max-width:100%;border:1px solid #334155;border-radius:8px" alt="Final State Architecture">
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+        <h2>Migration Plan: 5 Phases</h2>
+        <p style="color:#94a3b8;font-size:13px;margin-bottom:16px">A zero-downtime, zero-password-reset migration strategy designed for safety and reversibility.</p>
+
+        <div style="margin-bottom:16px;padding:16px;background:#1e293b;border-left:4px solid #f59e0b;border-radius:0 8px 8px 0">
+            <h3 style="color:#f59e0b;font-size:14px;margin-bottom:6px">Phase 0: Bulk Import</h3>
+            <p style="color:#94a3b8;font-size:12px;margin-bottom:6px"><b>User impact:</b> None. No user-facing changes.</p>
+            <p style="color:#94a3b8;font-size:12px;line-height:1.6">
+                Fetches all users from both legacy sites and imports them into the ID Platform. Password hashes are preserved in their original format (SHA-256+salt, MD5, or BCrypt). Email conflicts between sites are resolved via merge (same email on both sites = one unified account). Each user is tagged with their source site for tracking.
+            </p>
+        </div>
+
+        <div style="margin-bottom:16px;padding:16px;background:#1e293b;border-left:4px solid #38bdf8;border-radius:0 8px 8px 0">
+            <h3 style="color:#38bdf8;font-size:14px;margin-bottom:6px">Phase 1: Shadow Mode</h3>
+            <p style="color:#94a3b8;font-size:12px;margin-bottom:6px"><b>User impact:</b> None. Can run for days/weeks to build confidence.</p>
+            <p style="color:#94a3b8;font-size:12px;line-height:1.6">
+                Every login attempt is validated against <i>both</i> the legacy system and the ID Platform. Results are compared to verify password migration accuracy. This phase validates that the ID Platform can authenticate all existing users correctly before any switchover. Runs in parallel with zero user impact.
+            </p>
+        </div>
+
+        <div style="margin-bottom:16px;padding:16px;background:#1e293b;border-left:4px solid #a78bfa;border-radius:0 8px 8px 0">
+            <h3 style="color:#a78bfa;font-size:14px;margin-bottom:6px">Phase 2: Dual-Write</h3>
+            <p style="color:#94a3b8;font-size:12px;margin-bottom:6px"><b>User impact:</b> None. Users see no difference.</p>
+            <p style="color:#94a3b8;font-size:12px;line-height:1.6">
+                New registrations and profile updates write to both the ID Platform and the legacy database simultaneously. This ensures both systems stay in sync while the legacy site still handles authentication. If cutover is rolled back, the legacy database has all the latest data.
+            </p>
+        </div>
+
+        <div style="margin-bottom:16px;padding:16px;background:#1e293b;border-left:4px solid #22c55e;border-radius:0 8px 8px 0">
+            <h3 style="color:#22c55e;font-size:14px;margin-bottom:6px">Phase 3: Cutover + SSO</h3>
+            <p style="color:#94a3b8;font-size:12px;margin-bottom:6px"><b>User impact:</b> Auth switches to ID Platform. SSO enabled.</p>
+            <p style="color:#94a3b8;font-size:12px;line-height:1.6">
+                MA Site (smaller, lower risk) is cut over first, then Main Site. Both sites redirect login to the ID Platform via OIDC (Authorization Code + PKCE). Password hashes that aren't BCrypt are lazily upgraded on first successful login &mdash; no forced password resets. Users can now SSO between both sites with one login.
+            </p>
+        </div>
+
+        <div style="margin-bottom:16px;padding:16px;background:#1e293b;border-left:4px solid #f87171;border-radius:0 8px 8px 0">
+            <h3 style="color:#f87171;font-size:14px;margin-bottom:6px">Phase 4: Rollback</h3>
+            <p style="color:#94a3b8;font-size:12px;margin-bottom:6px"><b>User impact:</b> None when rolling back. Auth reverts to legacy.</p>
+            <p style="color:#94a3b8;font-size:12px;line-height:1.6">
+                If problems occur after cutover, rollback reverts auth to the legacy systems. Password changes made during the ID Platform phase are reverse-synced to the legacy database &mdash; no user data is lost. Dual-write data is preserved for future re-attempt. Zero data loss, zero confusion.
+            </p>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+        <h2>Security Measures</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px">
+            <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px">
+                <h3 style="color:#38bdf8;font-size:14px;margin-bottom:8px">Password Strategy</h3>
+                <p style="color:#94a3b8;font-size:12px;line-height:1.8">
+                    <b>BCrypt:</b> Used natively by the ID Platform<br>
+                    <b>SHA-256 + salt:</b> Migrated as-is, verified in shadow mode<br>
+                    <b>Plain MD5:</b> Migrated as-is, lazily upgraded to BCrypt on first login<br>
+                    <b>No forced resets:</b> Users keep their existing passwords
+                </p>
+            </div>
+            <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px">
+                <h3 style="color:#38bdf8;font-size:14px;margin-bottom:8px">OIDC Security</h3>
+                <p style="color:#94a3b8;font-size:12px;line-height:1.8">
+                    <b>PKCE (S256):</b> Authorization code interception protection<br>
+                    <b>RS256:</b> Asymmetric JWT signing (JWKS endpoint)<br>
+                    <b>Token validation:</b> Zero-trust filter on all protected endpoints<br>
+                    <b>Session cookies:</b> IDP session for SSO across services
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+        <h2>Rollback Safety</h2>
+        <p style="color:#94a3b8;font-size:12px;line-height:1.8">
+            <b>Reverse-sync:</b> Password changes made while using the ID Platform are written back to the legacy database during rollback.<br>
+            <b>Zero data loss:</b> Dual-write data is preserved in both systems throughout the migration.<br>
+            <b>Minimal risk:</b> Rollback reverts to the exact state before cutover. Users who changed passwords during the IDP phase can still log in via legacy auth.<br>
+            <b>Re-attempt ready:</b> All migration data is preserved, allowing the team to diagnose issues and re-attempt cutover with fixes.
+        </p>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+        <h2>Technical Stack</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:12px">
+            <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px">
+                <h3 style="color:#f59e0b;font-size:14px;margin-bottom:8px">ID Platform</h3>
+                <p style="color:#94a3b8;font-size:12px;line-height:1.8">
+                    Java 17 / Spring Boot<br>
+                    OAuth 2.0 / OIDC<br>
+                    H2 Database (demo) / PostgreSQL (prod)<br>
+                    JWT (RS256) + JWKS<br>
+                    Zero-trust token validation
+                </p>
+            </div>
+            <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px">
+                <h3 style="color:#38bdf8;font-size:14px;margin-bottom:8px">Legacy Sites</h3>
+                <p style="color:#94a3b8;font-size:12px;line-height:1.8">
+                    Python 3.11 / Flask<br>
+                    SQLite (demo) / MySQL (prod)<br>
+                    Session-based auth<br>
+                    OIDC client integration<br>
+                    Auto-detects IDP status
+                </p>
+            </div>
+            <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px">
+                <h3 style="color:#22c55e;font-size:14px;margin-bottom:8px">Infrastructure</h3>
+                <p style="color:#94a3b8;font-size:12px;line-height:1.8">
+                    Docker / Docker Compose<br>
+                    Health checks &amp; auto-restart<br>
+                    SSE streaming for demo<br>
+                    Configurable via .env<br>
+                    Deploy script included
+                </p>
+            </div>
+        </div>
     </div>
 </div>
 

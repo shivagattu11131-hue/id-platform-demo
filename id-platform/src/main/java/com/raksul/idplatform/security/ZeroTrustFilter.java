@@ -123,6 +123,7 @@ public class ZeroTrustFilter extends OncePerRequestFilter {
                path.startsWith("/css/") ||
                path.startsWith("/js/") ||
                path.startsWith("/images/") ||
+               path.startsWith("/architecture/") ||
                path.startsWith("/webjars/");
     }
 
