@@ -323,7 +323,7 @@ th { color: #64748b; font-weight: 600; }
         </div>
         <button class="btn btn-green" id="run-demo-btn" onclick="runFullDemo()" style="font-size:15px;padding:12px 24px">Run Full Demo</button>
         <button class="btn btn-blue" onclick="document.getElementById('demo-progress').innerHTML=''" style="font-size:15px;padding:12px 24px">Clear</button>
-        <div id="demo-progress" style="margin-top:16px"></div>
+        <div id="demo-progress" style="margin-top:16px;max-height:70vh;overflow-y:auto"></div>
     </div>
 </div>
 
@@ -659,70 +659,94 @@ async function doRegisterClient() {
     loadClientTable();
 }
 
+const PHASE_COLORS = { 0: '#38bdf8', 1: '#a78bfa', 2: '#fbbf24', 3: '#34d399', 4: '#f87171' };
+
 async function runFullDemo() {
     const btn = document.getElementById('run-demo-btn');
     const progress = document.getElementById('demo-progress');
     btn.disabled = true;
     btn.textContent = 'Running...';
-    progress.innerHTML = '<div style="color:#fbbf24;font-size:14px">Executing migration phases...</div>';
+    progress.innerHTML = '<div style="color:#fbbf24;font-size:14px">Starting migration demo...</div>';
+
+    function processEvents(text) {
+        const events = text.split(String.fromCharCode(10,10));
+        for (const evt of events) {
+            if (!evt.trim()) continue;
+            let eventType = '', eventData = '';
+            for (const line of evt.split(String.fromCharCode(10))) {
+                if (line.startsWith('event:')) eventType = line.substring(6).trim();
+                else if (line.startsWith('data:')) eventData += line.substring(5).trim();
+            }
+            if (!eventData) continue;
+            try {
+                if (eventType === 'phase') renderPhaseCard(progress, JSON.parse(eventData));
+                else if (eventType === 'complete') renderDemoComplete(progress, JSON.parse(eventData));
+            } catch(e) {}
+        }
+    }
 
     try {
         const resp = await fetch('/api/migration/run-demo', { method: 'POST' });
-        const result = await resp.json();
-        renderDemoResult(result);
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            buffer += decoder.decode(value, { stream: !done });
+            if (done) { processEvents(buffer); break; }
+            const parts = buffer.split(String.fromCharCode(10,10));
+            buffer = parts.pop();
+            processEvents(parts.join(String.fromCharCode(10,10)));
+        }
     } catch(e) {
-        progress.innerHTML = '<div style="color:#f87171">Error: ' + e.message + '</div>';
+        progress.innerHTML += '<div style="color:#f87171;margin-top:8px">Error: ' + e.message + '</div>';
     }
     btn.disabled = false;
     btn.textContent = 'Run Full Demo';
 }
 
-function renderDemoResult(result) {
-    const progress = document.getElementById('demo-progress');
-    let html = '';
+function renderPhaseCard(progress, phase) {
+    const color = PHASE_COLORS[phase.phase] || '#94a3b8';
+    const statusBadge = phase.success ?
+        '<span class="badge badge-green">SUCCESS</span>' :
+        '<span class="badge badge-red">FAILED</span>';
 
-    const phaseColors = { 0: '#38bdf8', 1: '#a78bfa', 2: '#fbbf24', 3: '#34d399', 4: '#f87171' };
-    const phaseIcons = { 0: '0', 1: '1', 2: '2', 3: '3', 4: '4' };
-
-    if (result.phases) {
-        result.phases.forEach(phase => {
-            const color = phaseColors[phase.phase] || '#94a3b8';
-            const icon = phaseIcons[phase.phase] || '?';
-            const statusBadge = phase.success ?
-                '<span class="badge badge-green">SUCCESS</span>' :
-                '<span class="badge badge-red">FAILED</span>';
-
-            html += '<div class="card" style="margin-bottom:12px;border-left:3px solid ' + color + '">';
-            html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
-            html += '<span style="background:' + color + ';color:#0f172a;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">' + icon + '</span>';
-            html += '<h3 style="color:' + color + ';margin:0">Phase ' + phase.phase + ': ' + phase.name + '</h3>';
-            html += statusBadge;
-            html += '<span style="color:#64748b;font-size:12px;margin-left:auto">' + phase.durationMs + 'ms</span>';
-            html += '</div>';
-            html += '<p style="color:#94a3b8;font-size:13px;margin-bottom:8px">' + phase.message + '</p>';
-
-            if (phase.steps) {
-                html += '<table style="font-size:12px">';
-                html += '<thead><tr><th>Step</th><th>Type</th><th>Result</th></tr></thead><tbody>';
-                phase.steps.forEach(step => {
-                    const stepBadge = step.success ?
-                        '<span class="badge badge-green">OK</span>' :
-                        '<span class="badge badge-red">FAIL</span>';
-                    const detail = step.detail ? ' <span style="color:#64748b">(' + step.detail + ')</span>' : '';
-                    html += '<tr><td>' + step.step + detail + '</td><td><code>' + step.type + '</code></td><td>' + stepBadge + '</td></tr>';
-                });
-                html += '</tbody></table>';
-            }
-            html += '</div>';
+    let stepsHtml = '';
+    if (phase.steps && phase.steps.length > 0) {
+        stepsHtml += '<table style="font-size:12px;margin-top:8px">';
+        stepsHtml += '<thead><tr><th>Step</th><th>Type</th><th>Result</th></tr></thead><tbody>';
+        phase.steps.forEach(step => {
+            const stepBadge = step.success ?
+                '<span class="badge badge-green">OK</span>' :
+                '<span class="badge badge-red">FAIL</span>';
+            const detail = step.detail ? ' <span style="color:#64748b">(' + step.detail + ')</span>' : '';
+            stepsHtml += '<tr><td>' + step.step + detail + '</td><td><code>' + step.type + '</code></td><td>' + stepBadge + '</td></tr>';
         });
-
-        html += '<div class="card" style="border-left:3px solid #22c55e">';
-        html += '<h3 style="color:#22c55e">Demo Complete</h3>';
-        html += '<p style="color:#94a3b8;font-size:13px">Total duration: ' + result.durationMs + 'ms | Phases: ' + result.totalPhases + '</p>';
-        html += '</div>';
+        stepsHtml += '</tbody></table>';
     }
 
-    progress.innerHTML = html;
+    let html = '<div class="card" style="margin-bottom:12px;border-left:3px solid ' + color + '">';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
+    html += '<span style="background:' + color + ';color:#0f172a;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">' + phase.phase + '</span>';
+    html += '<h3 style="color:' + color + ';margin:0">Phase ' + phase.phase + ': ' + phase.name + '</h3>';
+    html += statusBadge;
+    html += '<span style="color:#64748b;font-size:12px;margin-left:auto">' + phase.durationMs + 'ms</span>';
+    html += '</div>';
+    html += '<p style="color:#94a3b8;font-size:13px;margin-bottom:8px">' + phase.message + '</p>';
+    html += stepsHtml;
+    html += '</div>';
+
+    progress.innerHTML += html;
+    progress.scrollTop = progress.scrollHeight;
+}
+
+function renderDemoComplete(progress, summary) {
+    let html = '<div class="card" style="border-left:3px solid #22c55e">';
+    html += '<h3 style="color:#22c55e">Demo Complete</h3>';
+    html += '<p style="color:#94a3b8;font-size:13px">Total duration: ' + summary.durationMs + 'ms | Phases: ' + summary.totalPhases + '</p>';
+    html += '</div>';
+    progress.innerHTML += html;
 }
 
 async function loadClientTable() {

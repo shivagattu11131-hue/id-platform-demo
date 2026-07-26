@@ -18,7 +18,7 @@ EXTERNAL_BASE_URL = os.environ.get("EXTERNAL_BASE_URL", "http://localhost")
 
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -192,24 +192,28 @@ def register():
 
     try:
         conn = get_db()
-        conn.execute(
-            'INSERT INTO users (email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?)',
-            (email, hash_password(password), first_name, last_name)
-        )
-        conn.commit()
-        user = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
-        conn.close()
+        try:
+            conn.execute(
+                'INSERT INTO users (email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?)',
+                (email, hash_password(password), first_name, last_name)
+            )
+            conn.commit()
+            user = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
 
-        return jsonify({
-            'id': user['id'],
-            'email': user['email'],
-            'first_name': user['first_name'],
-            'last_name': user['last_name'],
-            'created_at': user['created_at'],
-            'source': 'main_site'
-        }), 201
-    except sqlite3.IntegrityError:
-        return jsonify({'error': 'Email already exists'}), 409
+            return jsonify({
+                'id': user['id'],
+                'email': user['email'],
+                'first_name': user['first_name'],
+                'last_name': user['last_name'],
+                'created_at': user['created_at'],
+                'source': 'main_site'
+            }), 201
+        except sqlite3.IntegrityError:
+            return jsonify({'error': 'Email already exists'}), 409
+        finally:
+            conn.close()
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/auth/login', methods=['POST'])

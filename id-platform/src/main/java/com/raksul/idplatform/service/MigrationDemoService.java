@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 @Service
 public class MigrationDemoService {
@@ -49,6 +50,14 @@ public class MigrationDemoService {
         result.put("durationMs", duration);
         result.put("completed", true);
         return result;
+    }
+
+    public void runFullDemoStreaming(Consumer<Map<String, Object>> onPhase) {
+        try { onPhase.accept(runPhase0()); } catch (Exception e) { log.error("Phase 0 failed", e); }
+        try { onPhase.accept(runPhase1()); } catch (Exception e) { log.error("Phase 1 failed", e); }
+        try { onPhase.accept(runPhase2()); } catch (Exception e) { log.error("Phase 2 failed", e); }
+        try { onPhase.accept(runPhase3()); } catch (Exception e) { log.error("Phase 3 failed", e); }
+        try { onPhase.accept(runPhase4()); } catch (Exception e) { log.error("Phase 4 failed", e); }
     }
 
     private Map<String, Object> runPhase0() {
@@ -128,7 +137,7 @@ public class MigrationDemoService {
                         Map<String, Object> lu = new LinkedHashMap<>();
                         lu.put("id", String.valueOf(m.get("id")));
                         lu.put("email", m.get("email"));
-                        lu.put("passwordHash", m.get("password_hash"));
+                        lu.put("passwordHash", m.get("password_md5") != null ? m.get("password_md5") : m.get("password_hash"));
                         Object displayName = m.get("display_name");
                         lu.put("displayName", displayName != null ? displayName : m.get("email"));
                         lu.put("source", "ma");
@@ -239,14 +248,16 @@ public class MigrationDemoService {
             // TC1: New user on Main
             Map<String, String> newUser1 = Map.of("username", "new_user_1", "email", "newuser1@example.com", "password", "newpass123", "display_name", "New User One");
             Object reg1 = callPost(mainSiteUrl + "/api/auth/register", newUser1);
-            Map<String, String> dw1 = Map.of("email", "newuser1@example.com", "displayName", "New User One", "source", "main");
+            String hash1 = java.util.Base64.getEncoder().encodeToString("newpass123".getBytes());
+            Map<String, String> dw1 = new LinkedHashMap<>(Map.of("email", "newuser1@example.com", "displayName", "New User One", "source", "main", "passwordHash", hash1));
             Object dwResp1 = callPost("http://localhost:3000/api/migration/dual-write?site=main", dw1);
             steps.add(step("New user registration (Main)", "dual-write", dwResp1 != null));
 
             // TC2: New user on MA
             Map<String, String> newUser2 = Map.of("username", "new_ma_user_1", "email", "newmauser1@example.com", "password", "newmapass123", "display_name", "New MA User One", "company_name", "New Acquired Corp");
             Object reg2 = callPost(maSiteUrl + "/api/auth/register", newUser2);
-            Map<String, String> dw2 = Map.of("email", "newmauser1@example.com", "displayName", "New MA User One", "source", "ma");
+            String hash2 = java.util.Base64.getEncoder().encodeToString("newmapass123".getBytes());
+            Map<String, String> dw2 = new LinkedHashMap<>(Map.of("email", "newmauser1@example.com", "displayName", "New MA User One", "source", "ma", "passwordHash", hash2));
             Object dwResp2 = callPost("http://localhost:3000/api/migration/dual-write?site=ma", dw2);
             steps.add(step("New user registration (MA)", "dual-write", dwResp2 != null));
 

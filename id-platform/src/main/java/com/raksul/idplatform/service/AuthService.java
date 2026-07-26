@@ -138,8 +138,9 @@ public class AuthService {
         if (isBCrypt(storedHash)) {
             return passwordEncoder.matches(password, storedHash);
         }
-        // Legacy hash - try both salts
+        // Legacy hash - try plaintext, MD5, and SHA-256 with both salts
         return password.equals(storedHash) ||
+               hashPasswordMD5(password).equals(storedHash) ||
                hashLegacyPassword(password, MAIN_SITE_SALT).equals(storedHash) ||
                hashLegacyPassword(password, MA_SITE_SALT).equals(storedHash);
     }
@@ -167,6 +168,25 @@ public class AuthService {
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("SHA-256 not available", e);
+        }
+    }
+
+    /**
+     * Hash password using legacy MD5 (MA site format)
+     */
+    private String hashPasswordMD5(String password) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("MD5");
+            byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("MD5 not available", e);
         }
     }
 

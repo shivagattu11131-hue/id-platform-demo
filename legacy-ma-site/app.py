@@ -18,7 +18,7 @@ EXTERNAL_BASE_URL = os.environ.get("EXTERNAL_BASE_URL", "http://localhost")
 
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -188,24 +188,28 @@ def register():
 
     try:
         conn = get_db()
-        conn.execute(
-            'INSERT INTO members (email, password_md5, first_name, last_name) VALUES (?, ?, ?, ?)',
-            (email, hash_password(password), first_name, last_name)
-        )
-        conn.commit()
-        member = conn.execute('SELECT * FROM members WHERE email = ?', (email,)).fetchone()
-        conn.close()
+        try:
+            conn.execute(
+                'INSERT INTO members (email, password_md5, first_name, last_name) VALUES (?, ?, ?, ?)',
+                (email, hash_password(password), first_name, last_name)
+            )
+            conn.commit()
+            member = conn.execute('SELECT * FROM members WHERE email = ?', (email,)).fetchone()
 
-        return jsonify({
-            'id': member['id'],
-            'email': member['email'],
-            'first_name': member['first_name'],
-            'last_name': member['last_name'],
-            'created_at': member['created_at'],
-            'source': 'ma_site'
-        }), 201
-    except sqlite3.IntegrityError:
-        return jsonify({'error': 'Email already exists'}), 409
+            return jsonify({
+                'id': member['id'],
+                'email': member['email'],
+                'first_name': member['first_name'],
+                'last_name': member['last_name'],
+                'created_at': member['created_at'],
+                'source': 'ma_site'
+            }), 201
+        except sqlite3.IntegrityError:
+            return jsonify({'error': 'Email already exists'}), 409
+        finally:
+            conn.close()
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/auth/login', methods=['POST'])
