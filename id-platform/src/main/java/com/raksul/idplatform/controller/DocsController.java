@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestController
@@ -19,15 +20,19 @@ public class DocsController {
         this.resourceLoader = resourceLoader;
     }
 
-    private static final Map<String, String> DOC_TITLES = Map.of(
-        "requirements", "Requirements Gathering",
-        "design-decisions", "Design Decisions",
-        "test-plan", "Test Plan",
-        "scaling-strategy", "Scaling Strategy",
-        "security-review", "Security Review",
-        "api-contract", "API Contract Specification",
-        "operational-runbook", "Operational Runbook"
-    );
+    private static final Map<String, String> DOC_TITLES = new LinkedHashMap<>();
+
+    static {
+        DOC_TITLES.put("assignment-response", "Assignment Response");
+        DOC_TITLES.put("readme", "Project README");
+        DOC_TITLES.put("requirements", "Requirements Gathering");
+        DOC_TITLES.put("design-decisions", "Design Decisions");
+        DOC_TITLES.put("test-plan", "Test Plan");
+        DOC_TITLES.put("scaling-strategy", "Scaling Strategy");
+        DOC_TITLES.put("security-review", "Security Review");
+        DOC_TITLES.put("api-contract", "API Contract Specification");
+        DOC_TITLES.put("operational-runbook", "Operational Runbook");
+    }
 
     @GetMapping(value = "/docs/{name}", produces = MediaType.TEXT_HTML_VALUE)
     public String getDoc(@PathVariable String name) throws IOException {
@@ -212,6 +217,7 @@ h1{color:#f87171;margin-bottom:12px}p{color:#94a3b8}a{color:#38bdf8}</style></he
     }
 
     private String formatInline(String text) {
+        text = text.replaceAll("!\\[([^]]*)\\]\\(([^)]+)\\)", "<img src=\"$2\" alt=\"$1\" style=\"max-width:100%;border-radius:8px;border:1px solid #334155;margin:12px 0;display:block\" />");
         text = text.replaceAll("`([^`]+)`", "<code>$1</code>");
         text = text.replaceAll("\\*\\*([^*]+)\\*\\*", "<strong>$1</strong>");
         text = text.replaceAll("\\*([^*]+)\\*", "<em>$1</em>");
