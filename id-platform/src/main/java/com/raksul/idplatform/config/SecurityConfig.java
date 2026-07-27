@@ -28,7 +28,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/.well-known/**", "/jwks.json", "/api/health").permitAll()
-                .requestMatchers("/oauth2/authorize", "/oauth2/token", "/oauth2/register", "/oauth2/clients").permitAll()
+                .requestMatchers("/oauth2/authorize", "/oauth2/authorize-register", "/oauth2/token", "/oauth2/register", "/oauth2/clients").permitAll()
                 .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
                 .requestMatchers("/api/migration/**").permitAll()
                 .requestMatchers("/h2-console/**", "/error").permitAll()

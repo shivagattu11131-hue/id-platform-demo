@@ -110,6 +110,30 @@
         .btn-primary:active {
             transform: translateY(0);
         }
+        .toggle-link {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #666;
+        }
+        .toggle-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .toggle-link a:hover {
+            text-decoration: underline;
+        }
+        .register-form {
+            display: none;
+        }
+        .register-form.show {
+            display: block;
+        }
+        .login-form.hidden {
+            display: none;
+        }
         .footer {
             text-align: center;
             margin-top: 24px;
@@ -181,6 +205,42 @@
             <button type="submit" class="btn-primary">Sign In</button>
         </form>
 
+        <div class="toggle-link" id="loginToggle">
+            <p>Don't have an account? <a onclick="showRegister()">Register</a></p>
+        </div>
+
+        <form id="registerForm" class="register-form" th:action="@{/oauth2/authorize-register}" method="post">
+            <input type="hidden" name="response_type" th:value="${responseType}">
+            <input type="hidden" name="client_id" th:value="${clientId}">
+            <input type="hidden" name="redirect_uri" th:value="${redirectUri}">
+            <input type="hidden" name="scope" th:value="${scope}">
+            <input type="hidden" name="state" th:value="${state}">
+            <input type="hidden" name="nonce" th:value="${nonce}">
+            <input type="hidden" name="code_challenge" th:value="${codeChallenge}">
+            <input type="hidden" name="code_challenge_method" th:value="${codeChallengeMethod}">
+
+            <div class="form-group">
+                <label for="reg-email">Email Address</label>
+                <input type="email" id="reg-email" name="email" required placeholder="you@example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="reg-displayName">Display Name</label>
+                <input type="text" id="reg-displayName" name="displayName" required placeholder="Your name">
+            </div>
+
+            <div class="form-group">
+                <label for="reg-password">Password</label>
+                <input type="password" id="reg-password" name="password" required placeholder="Create a password" minlength="6">
+            </div>
+
+            <button type="submit" class="btn-primary">Create Account</button>
+        </form>
+
+        <div class="toggle-link" id="registerToggle" style="display:none;">
+            <p>Already have an account? <a onclick="showLogin()">Sign In</a></p>
+        </div>
+
         <div class="footer">
             <p>Protected by Raksul ID Platform</p>
         </div>
@@ -188,6 +248,20 @@
 
     <script th:if="${error}">
         document.getElementById('errorMessage').classList.add('show');
+    </script>
+    <script>
+        function showRegister() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('loginToggle').style.display = 'none';
+            document.getElementById('registerForm').classList.add('show');
+            document.getElementById('registerToggle').style.display = 'block';
+        }
+        function showLogin() {
+            document.getElementById('registerForm').classList.remove('show');
+            document.getElementById('registerToggle').style.display = 'none';
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('loginToggle').style.display = 'block';
+        }
     </script>
 </body>
 </html>

@@ -170,6 +170,76 @@ public class OidcController {
         }
     }
 
+    @PostMapping("/authorize-register")
+    public String authorizeRegister(
+            @RequestParam("response_type") String responseType,
+            @RequestParam("client_id") String clientId,
+            @RequestParam("redirect_uri") String redirectUri,
+            @RequestParam(value = "scope", defaultValue = "openid") String scope,
+            @RequestParam(value = "state", required = false) String state,
+            @RequestParam(value = "nonce", required = false) String nonce,
+            @RequestParam(value = "code_challenge", required = false) String codeChallenge,
+            @RequestParam(value = "code_challenge_method", defaultValue = "S256") String codeChallengeMethod,
+            @RequestParam("email") String email,
+            @RequestParam("password") String password,
+            @RequestParam(value = "displayName", required = false) String displayName,
+            HttpServletResponse response,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            // Check if user already exists
+            if (authService.getUserByEmail(email) != null) {
+                // Redirect back to login with error
+                StringBuilder loginUrl = new StringBuilder("/oauth2/authorize");
+                loginUrl.append("?response_type=").append(encodeValue(responseType));
+                loginUrl.append("&client_id=").append(encodeValue(clientId));
+                loginUrl.append("&redirect_uri=").append(encodeValue(redirectUri));
+                loginUrl.append("&scope=").append(encodeValue(scope));
+                if (state != null) loginUrl.append("&state=").append(encodeValue(state));
+                if (nonce != null) loginUrl.append("&nonce=").append(encodeValue(nonce));
+                if (codeChallenge != null) loginUrl.append("&code_challenge=").append(encodeValue(codeChallenge));
+                loginUrl.append("&code_challenge_method=").append(encodeValue(codeChallengeMethod));
+                loginUrl.append("&error=").append(encodeValue("Email already registered"));
+                return "redirect:" + loginUrl.toString();
+            }
+
+            // Register the new user
+            com.raksul.idplatform.model.AuthRequest authRequest = new com.raksul.idplatform.model.AuthRequest();
+            authRequest.setEmail(email);
+            authRequest.setPassword(password);
+            authRequest.setDisplayName(displayName != null ? displayName : email);
+
+            authService.register(authRequest);
+
+            // Find the newly registered user and log them in
+            User user = authService.getUserByEmail(email);
+            if (user == null || !user.isActive()) {
+                return buildErrorRedirect(redirectUri, state, "server_error", "Registration failed", redirectAttributes);
+            }
+
+            // Set IDP session cookie for SSO
+            setSessionCookie(response, String.valueOf(user.getId()));
+
+            String authCode = oidcService.generateAuthorizationCode(
+                    user, clientId, redirectUri, scope,
+                    codeChallenge, codeChallengeMethod, nonce, state
+            );
+
+            StringBuilder redirectUrl = new StringBuilder(redirectUri);
+            redirectUrl.append("?code=").append(authCode);
+            if (state != null) {
+                redirectUrl.append("&state=").append(encodeValue(state));
+            }
+
+            log.info("User registered and authorized: {} (client: {})", user.getId(), clientId);
+            return "redirect:" + redirectUrl.toString();
+
+        } catch (Exception e) {
+            log.error("Registration failed", e);
+            return buildErrorRedirect(redirectUri, state, "server_error", "Registration failed: " + e.getMessage(), redirectAttributes);
+        }
+    }
+
     @PostMapping("/token")
     @ResponseBody
     public ResponseEntity<?> token(@RequestBody Map<String, String> request) {

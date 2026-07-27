@@ -460,6 +460,7 @@ HOME_PAGE_OIDC = """
         .badge-oidc { background: #4caf50; color: white; }
         .btn { display: inline-block; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; text-decoration: none; font-size: 16px; }
         .btn-primary { background: #388e3c; color: white; }
+        .btn-secondary { background: white; color: #388e3c; border: 2px solid #388e3c; }
     </style>
 </head>
 <body>
@@ -474,6 +475,8 @@ HOME_PAGE_OIDC = """
             <p>Click below to login via OIDC. You can then access Main Site without re-login.</p>
             <br>
             <a href="/login" class="btn btn-primary">Login with ID Platform (OIDC)</a>
+            <br><br>
+            <a href="/login" class="btn btn-secondary">Register with ID Platform</a>
         </div>
     </div>
 </body>
